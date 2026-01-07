@@ -1,0 +1,135 @@
+@import '../variables.scss';
+
+.controls-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+  height: 180px;
+  /* Explicit height for hit area */
+  padding: 0 0 var(--spacing-xl);
+  /* Padding from bottom */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  z-index: var(--z-overlay);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: auto;
+  /* Enable hover detection on the area */
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+
+.control-button {
+  width: var(--control-size-md);
+  height: var(--control-size-md);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(183, 186, 195, 0.1);
+  border: 1px solid rgba(183, 186, 195, 0.2);
+  color: var(--text-secondary);
+  backdrop-filter: blur(8px);
+  transition: all var(--transition-base);
+
+  &:hover:not(:disabled) {
+    background-color: var(--interactive-normal);
+    color: var(--bg-primary);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-md);
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--interactive-active);
+    transform: translateY(0) scale(0.95);
+  }
+
+  &.control-button--danger {
+    color: var(--accent-danger);
+    border-color: rgba(255, 107, 107, 0.2);
+
+    &:hover:not(:disabled) {
+      background-color: var(--accent-danger);
+      border-color: var(--accent-danger);
+      color: var(--text-primary);
+    }
+  }
+
+  &.control-button--success {
+    color: var(--accent-success);
+    border-color: rgba(59, 165, 93, 0.2);
+
+    &:hover:not(:disabled) {
+      background-color: var(--accent-success);
+      border-color: var(--accent-success);
+      color: var(--text-primary);
+    }
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 0.5;
+    /* Subtle stroke for extra clarity */
+  }
+}
+
+.control-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: var(--spacing-sm);
+  padding: 0.4rem 0.8rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid rgba(183, 186, 195, 0.1);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-family: var(--font-family);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-lg);
+}
+
+.control-button:hover .control-tooltip {
+  opacity: 1;
+}
+
+@media (max-width: 1024px) {
+  .controls-overlay {
+    opacity: 1;
+    background: var(--bg-primary);
+    backdrop-filter: blur(10px);
+    height: auto;
+    padding: 0;
+    gap: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: var(--spacing-md) 0;
+  }
+
+  .control-button {
+    width: 56px;
+    height: 56px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .control-tooltip {
+      display: none;
+    }
+  }
+}

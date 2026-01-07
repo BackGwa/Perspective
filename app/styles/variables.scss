@@ -1,0 +1,69 @@
+:root {
+  // Background colors
+  --bg-primary: #090b0f;
+  --bg-secondary: #101426;
+  --bg-tertiary: #1a1e2e;
+  --bg-elevated: #1a1e2e;
+  --bg-video: #000000;
+  --bg-gradient: linear-gradient(to bottom, #090b0f 0%, #101426 100%);
+
+  // Text colors
+  --text-primary: #ffffff;
+  --text-secondary: #b7bac3;
+  --text-muted: #606269;
+  --text-link: #5865f2;
+
+  // Accent colors
+  --accent-primary: #b7bac3;
+  --accent-success: #3ba55d;
+  --accent-danger: #ff6b6b;
+  --accent-warning: #faa81a;
+
+  // Interactive states
+  --interactive-normal: #b7bac3;
+  --interactive-hover: #D7DBE8;
+  --interactive-active: #A1A4AE;
+
+  // Font
+  --font-family: 'Hubot-Sans', sans-serif;
+
+  // UI elements
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-circle: 9999px;
+
+  // Spacing
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  // Control sizes
+  --control-size-sm: 36px;
+  --control-size-md: 48px;
+  --control-size-lg: 64px;
+
+  // Overlay
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --overlay-bg-light: rgba(0, 0, 0, 0.5);
+
+  // Shadows
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.16);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.20);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.24);
+
+  // Transitions
+  --transition-base: 0.25s ease-in-out;
+
+  // Z-index layers
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-overlay: 500;
+  --z-modal: 1000;
+  --z-toast: 2000;
+}

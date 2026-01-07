@@ -1,0 +1,214 @@
+@import '../variables.scss';
+
+.host-page {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  font-family: var(--font-family);
+
+  &__loading {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+  }
+}
+
+.local-preview {
+  flex: 1;
+  position: relative;
+  background: var(--bg-video);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &__video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 1;
+    background-color: var(--bg-video);
+  }
+
+  &__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    background: radial-gradient(circle at center, rgba(183, 186, 195, 0.05) 0%, transparent 70%);
+
+    svg {
+      width: 84px;
+      height: 84px;
+      margin-bottom: var(--spacing-lg);
+      opacity: 0.3;
+    }
+  }
+}
+
+.share-link-display {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-lg);
+
+  &__title {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__content {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+  }
+
+  &__input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--interactive-normal);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+  }
+
+  &__button {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--accent-primary);
+    border-radius: var(--border-radius-sm);
+    color: var(--bg-primary);
+    font-weight: 500;
+    transition: background-color var(--transition-base);
+
+    &:hover:not(:disabled) {
+      background-color: var(--interactive-hover);
+    }
+
+    &--copied {
+      background-color: var(--accent-success);
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .host-page {
+    touch-action: manipulation;
+  }
+
+  .local-preview {
+    &__placeholder {
+      svg {
+        width: 64px;
+        height: 64px;
+      }
+    }
+  }
+
+  .share-link-display {
+    margin: var(--spacing-md);
+    padding: var(--spacing-md);
+
+    &__title {
+      font-size: 0.8rem;
+    }
+
+    &__input {
+      font-size: 0.8rem;
+      padding: var(--spacing-sm);
+    }
+
+    &__button {
+      padding: var(--spacing-sm) var(--spacing-md);
+      font-size: 0.875rem;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .local-preview {
+    &__placeholder {
+      svg {
+        width: 56px;
+        height: 56px;
+        margin-bottom: var(--spacing-md);
+      }
+
+      p {
+        font-size: 0.95rem;
+      }
+    }
+  }
+
+  .share-link-display {
+    margin: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+
+    &__title {
+      font-size: 0.75rem;
+      margin-bottom: 0.375rem;
+    }
+
+    &__content {
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    &__input {
+      font-size: 0.75rem;
+      padding: 0.5rem;
+    }
+
+    &__button {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .local-preview {
+    &__placeholder {
+      svg {
+        width: 48px;
+        height: 48px;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      p {
+        font-size: 0.875rem;
+        padding: 0 1rem;
+      }
+    }
+  }
+
+  .share-link-display {
+    &__title {
+      font-size: 0.7rem;
+    }
+
+    &__input {
+      font-size: 0.7rem;
+      padding: 0.45rem;
+    }
+
+    &__button {
+      padding: 0.45rem;
+      font-size: 0.8rem;
+    }
+  }
+}
