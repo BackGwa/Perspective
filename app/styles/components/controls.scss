@@ -42,13 +42,11 @@
   &:hover:not(:disabled) {
     background-color: var(--interactive-normal);
     color: var(--bg-primary);
-    transform: translateY(-2px) scale(1.05);
     box-shadow: var(--shadow-md);
   }
 
   &:active:not(:disabled) {
     background-color: var(--interactive-active);
-    transform: translateY(0) scale(0.95);
   }
 
   &.control-button--danger {
