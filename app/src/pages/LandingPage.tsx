@@ -63,6 +63,15 @@ export function LandingPage() {
             // Use visual viewport height instead of window.innerHeight
             // This accounts for virtual keyboard
             const viewportHeight = visualViewport.height;
+
+            // Adjust body and root heights to prevent scrolling
+            document.documentElement.style.height = `${viewportHeight}px`;
+            document.body.style.height = `${viewportHeight}px`;
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                rootElement.style.height = `${viewportHeight}px`;
+            }
+
             landingPageRef.current.style.height = `${viewportHeight}px`;
             leftPanelRef.current.style.height = `${viewportHeight}px`;
         };
@@ -75,6 +84,14 @@ export function LandingPage() {
         return () => {
             visualViewport.removeEventListener('resize', handleViewportChange);
             visualViewport.removeEventListener('scroll', handleViewportChange);
+
+            // Cleanup: restore original styles
+            document.documentElement.style.height = '';
+            document.body.style.height = '';
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                rootElement.style.height = '';
+            }
         };
     }, []);
 
@@ -90,7 +107,8 @@ export function LandingPage() {
             }
 
             const rightPanelHeight = rightPanelRef.current.offsetHeight;
-            const viewportHeight = window.innerHeight;
+            // Use visualViewport for accurate height including keyboard
+            const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
             const availableHeight = viewportHeight - rightPanelHeight;
 
             brandTitleRef.current.style.height = `${availableHeight}px`;
@@ -106,11 +124,14 @@ export function LandingPage() {
             resizeObserver.observe(rightPanelRef.current);
         }
 
+        // Listen to both window resize and visualViewport resize
         window.addEventListener('resize', adjustBrandTitleHeight);
+        window.visualViewport?.addEventListener('resize', adjustBrandTitleHeight);
 
         return () => {
             resizeObserver.disconnect();
             window.removeEventListener('resize', adjustBrandTitleHeight);
+            window.visualViewport?.removeEventListener('resize', adjustBrandTitleHeight);
         };
     }, []);
 
