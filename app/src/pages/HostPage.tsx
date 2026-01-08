@@ -20,9 +20,11 @@ export function HostPage() {
     isPaused,
     isMuted,
     error,
+    canSwitchCamera,
     stopCapture,
     toggleVideo,
-    toggleAudio
+    toggleAudio,
+    switchCamera
   } = useMediaStream();
 
   // Store latest functions in refs for cleanup
@@ -109,6 +111,11 @@ export function HostPage() {
     toggleAudio(isMuted);
   };
 
+  const handleSwitchCamera = () => {
+    console.log('handleSwitchCamera called');
+    switchCamera();
+  };
+
 
   // Cleanup only on unmount
   useEffect(() => {
@@ -154,8 +161,11 @@ export function HostPage() {
         isPaused={isPaused}
         isMuted={isMuted}
         shareLink={getShareLink() || ''}
+        sourceType={sourceType}
+        canSwitchCamera={canSwitchCamera}
         onToggleVideo={handleToggleVideo}
         onToggleAudio={handleToggleAudio}
+        onSwitchCamera={handleSwitchCamera}
         onStop={handleStop}
       />
     </div>

@@ -13,3 +13,4 @@ export { IconMonitorOn } from './IconMonitorOn';
 export { IconMonitorOff } from './IconMonitorOff';
 export { IconExit } from './IconExit';
 export { IconStop } from './IconStop';
+export { IconCameraSwitch } from './IconCameraSwitch';

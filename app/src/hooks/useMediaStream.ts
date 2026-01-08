@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { mediaService } from '../services/mediaService';
 import { useStreamContext } from '../contexts/StreamContext';
 import type { MediaSourceType } from '../types/media.types';
@@ -57,6 +57,38 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
     }
   }, [streamState.stream, setMuted]);
 
+  // Camera switching state
+  const [canSwitchCamera, setCanSwitchCamera] = useState(false);
+
+  // Check if camera switching is available when source type changes
+  useEffect(() => {
+    const checkCameraSwitch = async () => {
+      if (streamState.sourceType === 'camera') {
+        const hasMultipleCameras = await mediaService.hasFrontAndBackCamera();
+        setCanSwitchCamera(hasMultipleCameras);
+      } else {
+        setCanSwitchCamera(false);
+      }
+    };
+    checkCameraSwitch();
+  }, [streamState.sourceType]);
+
+  const switchCamera = useCallback(async () => {
+    if (!streamState.stream || streamState.sourceType !== 'camera') {
+      console.warn('Cannot switch camera: not in camera mode');
+      return;
+    }
+
+    try {
+      await mediaService.switchCamera(streamState.stream);
+      console.log('Camera switched successfully');
+    } catch (error) {
+      console.error('Failed to switch camera:', error);
+      const err = error instanceof Error ? error : new Error('Failed to switch camera');
+      setError(err);
+    }
+  }, [streamState.stream, streamState.sourceType, setError]);
+
   const streamRef = useRef<MediaStream | null>(null);
 
   // Keep ref in sync
@@ -96,9 +128,11 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
     isPaused: streamState.isPaused,
     isMuted: streamState.isMuted,
     error: streamState.error,
+    canSwitchCamera,
     startCapture,
     stopCapture,
     toggleVideo,
-    toggleAudio
+    toggleAudio,
+    switchCamera
   };
 }

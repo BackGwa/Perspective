@@ -5,17 +5,22 @@ import {
   IconMonitorOn,
   IconMonitorOff,
   IconShareMD as IconShare,
-  IconStop
+  IconStop,
+  IconCameraSwitch
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
 import '../../../styles/components/controls.scss';
+import type { MediaSourceType } from '../../types/media.types';
 
 interface HostControlsProps {
   isPaused: boolean;
   isMuted: boolean;
   shareLink: string;
+  sourceType: MediaSourceType | null;
+  canSwitchCamera: boolean;
   onToggleVideo: () => void;
   onToggleAudio: () => void;
+  onSwitchCamera: () => void;
   onStop: () => void;
 }
 
@@ -23,8 +28,11 @@ export function HostControls({
   isPaused,
   isMuted,
   shareLink,
+  sourceType,
+  canSwitchCamera,
   onToggleVideo,
   onToggleAudio,
+  onSwitchCamera,
   onStop
 }: HostControlsProps) {
   const [showQRPanel, setShowQRPanel] = useState(false);
@@ -45,6 +53,8 @@ export function HostControls({
     setShowQRPanel(prev => !prev);
   };
 
+  const isCameraMode = sourceType === 'camera';
+
   return (
     <div className="controls-overlay">
       <div ref={containerRef} style={{ position: 'relative', display: 'flex', gap: 'var(--spacing-md)', alignItems: 'center' }}>
@@ -53,6 +63,20 @@ export function HostControls({
             shareLink={shareLink}
           />
         )}
+
+        {/* Camera switch button - only shown in camera mode, leftmost position */}
+        {isCameraMode && (
+          <button
+            className={`control-button ${!canSwitchCamera ? 'control-button--disabled' : ''}`}
+            onClick={onSwitchCamera}
+            disabled={!canSwitchCamera}
+            title={canSwitchCamera ? 'Switch Camera' : 'Camera switch unavailable'}
+          >
+            <IconCameraSwitch />
+            <span className="control-tooltip">{canSwitchCamera ? 'Switch Camera' : 'No other camera'}</span>
+          </button>
+        )}
+
         <button
           className={`control-button ${isPaused ? 'control-button--danger' : ''}`}
           onClick={onToggleVideo}
@@ -92,3 +116,5 @@ export function HostControls({
     </div>
   );
 }
+
+

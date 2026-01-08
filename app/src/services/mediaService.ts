@@ -1,15 +1,66 @@
 import { CAMERA_CONSTRAINTS, SCREEN_CONSTRAINTS, ERROR_MESSAGES } from '../config/constants';
 import type { MediaSourceType } from '../types/media.types';
 
+export type CameraFacingMode = 'user' | 'environment';
+
 class MediaService {
   private currentStream: MediaStream | null = null;
   private microphoneTrack: MediaStreamTrack | null = null;
   private sourceType: MediaSourceType | null = null;
+  private currentFacingMode: CameraFacingMode = 'user';
+  private availableCameras: MediaDeviceInfo[] = [];
 
-  async getCameraStream(): Promise<MediaStream> {
+  async getAvailableCameras(): Promise<MediaDeviceInfo[]> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+      return this.availableCameras;
+    } catch (error) {
+      console.warn('Failed to enumerate devices:', error);
+      return [];
+    }
+  }
+
+  async hasFrontAndBackCamera(): Promise<boolean> {
+    const cameras = await this.getAvailableCameras();
+    if (cameras.length < 2) return false;
+
+    // Check for facing mode capability or label hints
+    const hasBack = cameras.some(cam =>
+      cam.label.toLowerCase().includes('back') ||
+      cam.label.toLowerCase().includes('rear') ||
+      cam.label.toLowerCase().includes('environment')
+    );
+    const hasFront = cameras.some(cam =>
+      cam.label.toLowerCase().includes('front') ||
+      cam.label.toLowerCase().includes('user') ||
+      cam.label.toLowerCase().includes('facetime')
+    );
+
+    // If labels don't reveal facing modes, assume multiple cameras = switchable
+    return (hasBack && hasFront) || cameras.length >= 2;
+  }
+
+  getCurrentFacingMode(): CameraFacingMode {
+    return this.currentFacingMode;
+  }
+
+  async getCameraStream(facingMode?: CameraFacingMode): Promise<MediaStream> {
+    try {
+      const targetFacingMode = facingMode || this.currentFacingMode;
+      const baseVideoConstraints = typeof CAMERA_CONSTRAINTS.video === 'object'
+        ? CAMERA_CONSTRAINTS.video
+        : {};
+      const constraints = {
+        ...CAMERA_CONSTRAINTS,
+        video: {
+          ...baseVideoConstraints,
+          facingMode: { ideal: targetFacingMode }
+        }
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.currentStream = stream;
+      this.currentFacingMode = targetFacingMode;
       return stream;
     } catch (error) {
       throw this.handleMediaError(error);
@@ -132,6 +183,42 @@ class MediaService {
   isAudioEnabled(_stream: MediaStream): boolean {
     // Check microphone track status
     return this.microphoneTrack ? this.microphoneTrack.enabled : false;
+  }
+
+  async switchCamera(currentStream: MediaStream): Promise<MediaStream> {
+    if (this.sourceType !== 'camera') {
+      throw new Error('Camera switching is only available in camera mode');
+    }
+
+    // Toggle facing mode
+    const newFacingMode: CameraFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+
+    try {
+      // Stop current video track
+      const currentVideoTrack = currentStream.getVideoTracks()[0];
+      if (currentVideoTrack) {
+        currentVideoTrack.stop();
+        currentStream.removeTrack(currentVideoTrack);
+      }
+
+      // Get new camera stream with opposite facing mode
+      const newStream = await this.getCameraStream(newFacingMode);
+      const newVideoTrack = newStream.getVideoTracks()[0];
+
+      if (newVideoTrack) {
+        // Add new video track to current stream
+        currentStream.addTrack(newVideoTrack);
+      }
+
+      // Keep the audio track from the original stream
+      // The new stream's audio track can be stopped
+      newStream.getAudioTracks().forEach(track => track.stop());
+
+      console.log(`Camera switched to ${newFacingMode} mode`);
+      return currentStream;
+    } catch (error) {
+      throw this.handleMediaError(error);
+    }
   }
 
   checkWebRTCSupport(): boolean {
