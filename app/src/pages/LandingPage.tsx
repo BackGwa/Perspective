@@ -66,7 +66,9 @@ export function LandingPage() {
 
             // Adjust body and root heights to prevent scrolling
             document.documentElement.style.height = `${viewportHeight}px`;
+            document.documentElement.style.overflow = 'hidden';
             document.body.style.height = `${viewportHeight}px`;
+            document.body.style.overflow = 'hidden';
             const rootElement = document.getElementById('root');
             if (rootElement) {
                 rootElement.style.height = `${viewportHeight}px`;
@@ -74,6 +76,9 @@ export function LandingPage() {
 
             landingPageRef.current.style.height = `${viewportHeight}px`;
             leftPanelRef.current.style.height = `${viewportHeight}px`;
+
+            // Reset scroll position
+            window.scrollTo(0, 0);
         };
 
         handleViewportChange();
@@ -87,7 +92,9 @@ export function LandingPage() {
 
             // Cleanup: restore original styles
             document.documentElement.style.height = '';
+            document.documentElement.style.overflow = '';
             document.body.style.height = '';
+            document.body.style.overflow = '';
             const rootElement = document.getElementById('root');
             if (rootElement) {
                 rootElement.style.height = '';
