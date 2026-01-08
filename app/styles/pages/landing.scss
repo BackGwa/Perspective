@@ -183,34 +183,63 @@
 @media (max-width: 1024px) {
     .landing-page {
         flex-direction: column;
+        position: relative;
 
         &__left {
-            flex: 1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             max-width: 100%;
-            height: auto;
-            min-height: 400px;
             padding: 0;
+            z-index: 1;
 
             .hero-container {
                 width: 100%;
                 height: 100%;
                 margin-left: 0;
                 border-radius: 0;
+                position: relative;
 
-                .brand-title img {
-                    width: 12.5rem;
+                .brand-title {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transform: none;
+
+                    img {
+                        width: 12.5rem;
+                        margin: auto;
+                    }
                 }
             }
         }
 
         &__right {
-            max-width: 100%;
-            padding: 1.25rem;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            padding: 1.5rem 1.25rem;
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
             height: auto;
             flex: 0 0 auto;
+            z-index: 2;
+            background: rgba(9, 11, 15, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 24px 24px 0 0;
         }
 
         &__menu {
+            width: 100%;
             max-width: 500px;
             gap: 0.875rem;
         }
@@ -235,10 +264,6 @@
 
 @media (max-width: 480px) {
     .landing-page {
-        &__left {
-            min-height: 350px;
-        }
-
         &__menu {
             gap: 0.75rem;
             max-width: 100%;

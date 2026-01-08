@@ -28,6 +28,8 @@ export function LandingPage() {
     // Animation refs
     const menuRef = useRef<HTMLDivElement>(null);
     const [menuHeight, setMenuHeight] = useState<number | 'auto'>('auto');
+    const rightPanelRef = useRef<HTMLDivElement>(null);
+    const brandTitleRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!menuRef.current) return;
@@ -41,6 +43,42 @@ export function LandingPage() {
         resizeObserver.observe(menuRef.current);
 
         return () => resizeObserver.disconnect();
+    }, []);
+
+    // Adjust brand-title height based on right panel height (mobile/tablet only)
+    useEffect(() => {
+        const adjustBrandTitleHeight = () => {
+            if (!rightPanelRef.current || !brandTitleRef.current) return;
+
+            // Only apply on mobile/tablet (max-width: 1024px)
+            if (window.innerWidth > 1024) {
+                brandTitleRef.current.style.height = '';
+                return;
+            }
+
+            const rightPanelHeight = rightPanelRef.current.offsetHeight;
+            const viewportHeight = window.innerHeight;
+            const availableHeight = viewportHeight - rightPanelHeight;
+
+            brandTitleRef.current.style.height = `${availableHeight}px`;
+        };
+
+        adjustBrandTitleHeight();
+
+        const resizeObserver = new ResizeObserver(() => {
+            adjustBrandTitleHeight();
+        });
+
+        if (rightPanelRef.current) {
+            resizeObserver.observe(rightPanelRef.current);
+        }
+
+        window.addEventListener('resize', adjustBrandTitleHeight);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', adjustBrandTitleHeight);
+        };
     }, []);
 
     // Disable cleanup on unmount so the stream persists to HostPage
@@ -127,14 +165,14 @@ export function LandingPage() {
         <div className="landing-page">
             <div className="landing-page__left">
                 <div className="hero-container">
-                    <img src={heroImage} alt="Oh My Screen Hero" className="hero-bg" />
-                    <div className="brand-title">
-                        <img src={brandTitleImage} alt="OH MY SCREEN" />
+                    <img src={heroImage} className="hero-bg" />
+                    <div className="brand-title" ref={brandTitleRef}>
+                        <img src={brandTitleImage} alt="Perspective" />
                     </div>
                 </div>
             </div>
 
-            <div className="landing-page__right">
+            <div className="landing-page__right" ref={rightPanelRef}>
                 <div
                     className="landing-page__menu-wrapper"
                     style={{ height: menuHeight === 'auto' ? 'auto' : `${menuHeight}px` }}
