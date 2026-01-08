@@ -67,15 +67,19 @@
         cursor: pointer;
         transition: all var(--transition-base);
 
-        &:hover {
-            background-color: var(--interactive-hover);
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--interactive-hover);
+            }
         }
 
         &--copied {
             background-color: var(--interactive-hover); // Use hover state color instead of success green
 
-            &:hover {
-                background-color: var(--interactive-hover);
+            @media (hover: hover) {
+                &:hover {
+                    background-color: var(--interactive-hover);
+                }
             }
         }
     }

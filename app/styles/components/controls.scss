@@ -39,10 +39,12 @@
   backdrop-filter: blur(8px);
   transition: all var(--transition-base);
 
-  &:hover:not(:disabled) {
-    background-color: var(--interactive-normal);
-    color: var(--bg-primary);
-    box-shadow: var(--shadow-md);
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-color: var(--interactive-normal);
+      color: var(--bg-primary);
+      box-shadow: var(--shadow-md);
+    }
   }
 
   &:active:not(:disabled) {
@@ -53,10 +55,12 @@
     color: var(--accent-danger);
     border-color: rgba(255, 107, 107, 0.2);
 
-    &:hover:not(:disabled) {
-      background-color: var(--accent-danger);
-      border-color: var(--accent-danger);
-      color: var(--text-primary);
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background-color: var(--accent-danger);
+        border-color: var(--accent-danger);
+        color: var(--text-primary);
+      }
     }
   }
 
@@ -64,10 +68,12 @@
     color: var(--accent-success);
     border-color: rgba(59, 165, 93, 0.2);
 
-    &:hover:not(:disabled) {
-      background-color: var(--accent-success);
-      border-color: var(--accent-success);
-      color: var(--text-primary);
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background-color: var(--accent-success);
+        border-color: var(--accent-success);
+        color: var(--text-primary);
+      }
     }
   }
 
@@ -109,8 +115,10 @@
   box-shadow: var(--shadow-lg);
 }
 
-.control-button:hover .control-tooltip {
-  opacity: 1;
+@media (hover: hover) {
+  .control-button:hover .control-tooltip {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 1024px) {

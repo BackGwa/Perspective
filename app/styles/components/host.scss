@@ -94,8 +94,10 @@
     font-weight: 500;
     transition: background-color var(--transition-base);
 
-    &:hover:not(:disabled) {
-      background-color: var(--interactive-hover);
+    @media (hover: hover) {
+      &:hover:not(:disabled) {
+        background-color: var(--interactive-hover);
+      }
     }
 
     &--copied {
