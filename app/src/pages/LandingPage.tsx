@@ -31,6 +31,7 @@ export function LandingPage() {
     const rightPanelRef = useRef<HTMLDivElement>(null);
     const brandTitleRef = useRef<HTMLDivElement>(null);
     const landingPageRef = useRef<HTMLDivElement>(null);
+    const leftPanelRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!menuRef.current) return;
@@ -48,7 +49,7 @@ export function LandingPage() {
 
     // Handle visual viewport changes for mobile keyboard (mobile/tablet only)
     useEffect(() => {
-        if (!landingPageRef.current) return;
+        if (!landingPageRef.current || !leftPanelRef.current) return;
 
         // Only apply on mobile/tablet (max-width: 1024px)
         if (window.innerWidth > 1024) return;
@@ -57,12 +58,13 @@ export function LandingPage() {
         if (!visualViewport) return;
 
         const handleViewportChange = () => {
-            if (!landingPageRef.current) return;
+            if (!landingPageRef.current || !leftPanelRef.current) return;
 
             // Use visual viewport height instead of window.innerHeight
             // This accounts for virtual keyboard
             const viewportHeight = visualViewport.height;
             landingPageRef.current.style.height = `${viewportHeight}px`;
+            leftPanelRef.current.style.height = `${viewportHeight}px`;
         };
 
         handleViewportChange();
@@ -194,7 +196,7 @@ export function LandingPage() {
 
     return (
         <div className="landing-page" ref={landingPageRef}>
-            <div className="landing-page__left">
+            <div className="landing-page__left" ref={leftPanelRef}>
                 <div className="hero-container">
                     <img src={heroImage} className="hero-bg" />
                     <div className="brand-title" ref={brandTitleRef}>
