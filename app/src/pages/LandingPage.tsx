@@ -286,7 +286,7 @@ export function LandingPage() {
                                         onChange={(e) => setSessionId(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && !isConnecting && handleJoin()}
                                         disabled={isConnecting}
-                                        autoFocus
+                                        autoFocus={window.innerWidth > 1024}
                                     />
                                 </div>
                                 <button className="menu-button" onClick={handleJoin} disabled={isConnecting || !sessionId.trim()} key="join-confirm">
