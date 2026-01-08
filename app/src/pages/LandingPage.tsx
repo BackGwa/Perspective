@@ -327,9 +327,11 @@ export function LandingPage() {
                     ) : (
                         <img src={heroImage} className="hero-bg" />
                     )}
-                    <div className="brand-title" ref={brandTitleRef}>
-                        <img src={brandTitleImage} alt="Perspective" />
-                    </div>
+                    {!(joinMode === 'qr' && menuState === 'join') && (
+                        <div className="brand-title" ref={brandTitleRef}>
+                            <img src={brandTitleImage} alt="Perspective" />
+                        </div>
+                    )}
                 </div>
             </div>
 
