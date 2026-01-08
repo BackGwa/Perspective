@@ -184,6 +184,7 @@
     .landing-page {
         flex-direction: column;
         position: relative;
+        overflow: hidden;
 
         &__left {
             position: fixed;

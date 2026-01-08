@@ -30,6 +30,7 @@ export function LandingPage() {
     const [menuHeight, setMenuHeight] = useState<number | 'auto'>('auto');
     const rightPanelRef = useRef<HTMLDivElement>(null);
     const brandTitleRef = useRef<HTMLDivElement>(null);
+    const landingPageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!menuRef.current) return;
@@ -43,6 +44,36 @@ export function LandingPage() {
         resizeObserver.observe(menuRef.current);
 
         return () => resizeObserver.disconnect();
+    }, []);
+
+    // Handle visual viewport changes for mobile keyboard (mobile/tablet only)
+    useEffect(() => {
+        if (!landingPageRef.current) return;
+
+        // Only apply on mobile/tablet (max-width: 1024px)
+        if (window.innerWidth > 1024) return;
+
+        const visualViewport = window.visualViewport;
+        if (!visualViewport) return;
+
+        const handleViewportChange = () => {
+            if (!landingPageRef.current) return;
+
+            // Use visual viewport height instead of window.innerHeight
+            // This accounts for virtual keyboard
+            const viewportHeight = visualViewport.height;
+            landingPageRef.current.style.height = `${viewportHeight}px`;
+        };
+
+        handleViewportChange();
+
+        visualViewport.addEventListener('resize', handleViewportChange);
+        visualViewport.addEventListener('scroll', handleViewportChange);
+
+        return () => {
+            visualViewport.removeEventListener('resize', handleViewportChange);
+            visualViewport.removeEventListener('scroll', handleViewportChange);
+        };
     }, []);
 
     // Adjust brand-title height based on right panel height (mobile/tablet only)
@@ -162,7 +193,7 @@ export function LandingPage() {
     };
 
     return (
-        <div className="landing-page">
+        <div className="landing-page" ref={landingPageRef}>
             <div className="landing-page__left">
                 <div className="hero-container">
                     <img src={heroImage} className="hero-bg" />
