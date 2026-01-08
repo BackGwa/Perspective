@@ -8,10 +8,12 @@ import {
     IconJoin,
     IconCamera,
     IconScreen,
-    IconBack
+    IconBack,
+    IconQr
 } from '../components/icons';
 
 type MenuState = 'root' | 'share' | 'join';
+type JoinMode = 'input' | 'qr';
 
 import { useMediaStream } from '../hooks/useMediaStream';
 import { peerService } from '../services/peerService';
@@ -24,6 +26,8 @@ export function LandingPage() {
     const [error, setError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [sessionId, setSessionId] = useState('');
+    const [joinMode, setJoinMode] = useState<JoinMode>('input');
+    const [isInputFocused, setIsInputFocused] = useState(false);
 
     // Animation refs
     const menuRef = useRef<HTMLDivElement>(null);
@@ -189,9 +193,34 @@ export function LandingPage() {
 
     const handleBack = () => {
         if (isConnecting) return;
-        setError(null);
-        setSessionId('');
-        setMenuState('root');
+
+        const isDesktop = window.innerWidth > 1024;
+
+        if (joinMode === 'qr' && !isDesktop) {
+            // 모바일/태블릿: QR 모드에서는 input 모드로 돌아감
+            setJoinMode('input');
+            setIsInputFocused(false);
+            setError(null);
+        } else {
+            // PC: 항상 root로 돌아감
+            // 모바일: Input 모드에서는 root로 돌아감
+            setError(null);
+            setSessionId('');
+            setJoinMode('input');
+            setIsInputFocused(false);
+            setMenuState('root');
+        }
+    };
+
+    const handleJoinWithQR = () => {
+        if (joinMode === 'qr') {
+            // QR 모드에서 클릭하면 input 모드로 전환
+            setJoinMode('input');
+        } else {
+            // Input 모드에서 클릭하면 QR 모드로 전환
+            setJoinMode('qr');
+        }
+        setIsInputFocused(false);
     };
 
     // Share Actions
@@ -277,22 +306,42 @@ export function LandingPage() {
 
                         {menuState === 'join' && (
                             <>
-                                <div className="session-id-input-container">
-                                    <input
-                                        type="text"
-                                        className="session-id-input"
-                                        placeholder="Enter Session ID"
-                                        value={sessionId}
-                                        onChange={(e) => setSessionId(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && !isConnecting && handleJoin()}
-                                        disabled={isConnecting}
-                                        autoFocus={window.innerWidth > 1024}
-                                    />
-                                </div>
-                                <button className="menu-button" onClick={handleJoin} disabled={isConnecting || !sessionId.trim()} key="join-confirm">
-                                    <IconJoin className="button-icon" />
-                                    Join Session
-                                </button>
+                                {joinMode === 'input' && (
+                                    <>
+                                        <div className="session-id-input-container">
+                                            <input
+                                                type="text"
+                                                className="session-id-input"
+                                                placeholder="Enter Session ID"
+                                                value={sessionId}
+                                                onChange={(e) => setSessionId(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && !isConnecting && handleJoin()}
+                                                onFocus={() => setIsInputFocused(true)}
+                                                onBlur={() => setIsInputFocused(false)}
+                                                disabled={isConnecting}
+                                            />
+                                        </div>
+                                        {(isInputFocused || sessionId.trim()) && (
+                                            <button className="menu-button" onClick={handleJoin} disabled={isConnecting || !sessionId.trim()} key="join-confirm">
+                                                <IconJoin className="button-icon" />
+                                                Join Session
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                                {(window.innerWidth > 1024
+                                    ? !(joinMode === 'input' && (isInputFocused || sessionId.trim()))
+                                    : (joinMode === 'input' && !isInputFocused && !sessionId.trim())
+                                ) && (
+                                    <button
+                                        className="menu-button"
+                                        onClick={handleJoinWithQR}
+                                        key="join-qr"
+                                    >
+                                        <IconQr className="button-icon" />
+                                        {joinMode === 'qr' ? 'Enter Manually' : 'Join with QR'}
+                                    </button>
+                                )}
                                 <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} disabled={isConnecting} key="join-back">
                                     <IconBack className="button-icon" />
                                     Back
