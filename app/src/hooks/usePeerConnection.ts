@@ -136,11 +136,13 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
   }, [setConnectionStatus, setPeerId, setRemoteStream]);
 
   const getShareLink = useCallback(() => {
-    if (peerId && role === 'host') {
+    if (role === 'host' && peerId) {
       return peerService.generateShareLink(peerId);
+    } else if (role === 'participant' && hostPeerId) {
+      return peerService.generateShareLink(hostPeerId);
     }
     return null;
-  }, [peerId, role]);
+  }, [peerId, role, hostPeerId]);
 
   useEffect(() => {
     if (role === 'host') {

@@ -39,16 +39,6 @@ export function ParticipantPage() {
     setIsMuted(!isMuted);
   };
 
-  const handleShare = async () => {
-    const link = getShareLink();
-    if (link) {
-      try {
-        await navigator.clipboard.writeText(link);
-      } catch (err) {
-        console.error('Failed to copy link:', err);
-      }
-    }
-  };
 
   const handleLeave = () => {
     navigate('/');
@@ -68,8 +58,8 @@ export function ParticipantPage() {
       {!isConnecting && remoteStream && (
         <ParticipantControls
           isMuted={isMuted}
+          shareLink={getShareLink() || ''}
           onToggleAudio={handleToggleAudio}
-          onShare={handleShare}
           onLeave={handleLeave}
         />
       )}

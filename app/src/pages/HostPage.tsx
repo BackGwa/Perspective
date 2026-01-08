@@ -109,17 +109,6 @@ export function HostPage() {
     toggleAudio(isMuted);
   };
 
-  const handleCopyShareLink = async () => {
-    const link = getShareLink();
-    if (link) {
-      try {
-        await navigator.clipboard.writeText(link);
-        // You might want to show a toast here, but for now simple copy
-      } catch (err) {
-        console.error('Failed to copy link:', err);
-      }
-    }
-  };
 
   // Cleanup only on unmount
   useEffect(() => {
@@ -164,10 +153,10 @@ export function HostPage() {
       <HostControls
         isPaused={isPaused}
         isMuted={isMuted}
+        shareLink={getShareLink() || ''}
         onToggleVideo={handleToggleVideo}
         onToggleAudio={handleToggleAudio}
         onStop={handleStop}
-        onShare={handleCopyShareLink}
       />
     </div>
   );
