@@ -28,6 +28,7 @@ export function LandingPage() {
     const [sessionId, setSessionId] = useState('');
     const [joinMode, setJoinMode] = useState<JoinMode>('input');
     const [isInputFocused, setIsInputFocused] = useState(false);
+    const [qrCameraStream, setQrCameraStream] = useState<MediaStream | null>(null);
 
     // Animation refs
     const menuRef = useRef<HTMLDivElement>(null);
@@ -36,6 +37,7 @@ export function LandingPage() {
     const brandTitleRef = useRef<HTMLDivElement>(null);
     const landingPageRef = useRef<HTMLDivElement>(null);
     const leftPanelRef = useRef<HTMLDivElement>(null);
+    const qrVideoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
         if (!menuRef.current) return;
@@ -157,6 +159,26 @@ export function LandingPage() {
         }
     }, [location]);
 
+    // Cleanup QR camera on unmount or when leaving join menu
+    useEffect(() => {
+        return () => {
+            if (qrCameraStream) {
+                qrCameraStream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [qrCameraStream]);
+
+    // Cleanup QR camera when leaving join menu
+    useEffect(() => {
+        if (menuState !== 'join' && qrCameraStream) {
+            qrCameraStream.getTracks().forEach(track => track.stop());
+            setQrCameraStream(null);
+            if (qrVideoRef.current) {
+                qrVideoRef.current.srcObject = null;
+            }
+        }
+    }, [menuState, qrCameraStream]);
+
     const handleCapture = async (source: MediaSourceType) => {
         try {
             setError(null);
@@ -196,6 +218,11 @@ export function LandingPage() {
 
         const isDesktop = window.innerWidth > 1024;
 
+        // QR 카메라 정리
+        if (joinMode === 'qr') {
+            stopQRCamera();
+        }
+
         if (joinMode === 'qr' && !isDesktop) {
             // 모바일/태블릿: QR 모드에서는 input 모드로 돌아감
             setJoinMode('input');
@@ -212,13 +239,46 @@ export function LandingPage() {
         }
     };
 
+    const startQRCamera = async () => {
+        try {
+            const isMobile = window.innerWidth <= 1024;
+            const constraints: MediaStreamConstraints = {
+                video: isMobile
+                    ? { facingMode: { ideal: 'environment' } } // 모바일: 후면 카메라
+                    : { facingMode: 'user' } // PC: 전면 카메라
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            setQrCameraStream(stream);
+
+            if (qrVideoRef.current) {
+                qrVideoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error('Failed to start QR camera:', err);
+            setError('Failed to access camera. Please check permissions.');
+        }
+    };
+
+    const stopQRCamera = () => {
+        if (qrCameraStream) {
+            qrCameraStream.getTracks().forEach(track => track.stop());
+            setQrCameraStream(null);
+        }
+        if (qrVideoRef.current) {
+            qrVideoRef.current.srcObject = null;
+        }
+    };
+
     const handleJoinWithQR = () => {
         if (joinMode === 'qr') {
             // QR 모드에서 클릭하면 input 모드로 전환
+            stopQRCamera();
             setJoinMode('input');
         } else {
             // Input 모드에서 클릭하면 QR 모드로 전환
             setJoinMode('qr');
+            startQRCamera();
         }
         setIsInputFocused(false);
     };
@@ -255,7 +315,18 @@ export function LandingPage() {
         <div className="landing-page" ref={landingPageRef}>
             <div className="landing-page__left" ref={leftPanelRef}>
                 <div className="hero-container">
-                    <img src={heroImage} className="hero-bg" />
+                    {joinMode === 'qr' && menuState === 'join' ? (
+                        <video
+                            ref={qrVideoRef}
+                            className="hero-bg"
+                            autoPlay
+                            playsInline
+                            muted
+                            style={{ objectFit: 'cover' }}
+                        />
+                    ) : (
+                        <img src={heroImage} className="hero-bg" />
+                    )}
                     <div className="brand-title" ref={brandTitleRef}>
                         <img src={brandTitleImage} alt="Perspective" />
                     </div>
