@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../../styles/pages/landing.scss';
 import heroImage from '../../assets/hero-image.png';
@@ -18,6 +18,9 @@ type JoinMode = 'input' | 'qr';
 import { useMediaStream } from '../hooks/useMediaStream';
 import { peerService } from '../services/peerService';
 import type { MediaSourceType } from '../types/media.types';
+import { useQRScanner } from '../hooks/useQRScanner';
+import { qrScannerService } from '../services/qrScannerService';
+import type { QRScanResult } from '../types/qr.types';
 
 export function LandingPage() {
     const navigate = useNavigate();
@@ -171,6 +174,7 @@ export function LandingPage() {
     // Cleanup QR camera when leaving join menu
     useEffect(() => {
         if (menuState !== 'join' && qrCameraStream) {
+            // Note: stopScanning is automatically called by useQRScanner when enabled becomes false
             qrCameraStream.getTracks().forEach(track => track.stop());
             setQrCameraStream(null);
             if (qrVideoRef.current) {
@@ -220,6 +224,7 @@ export function LandingPage() {
 
         // QR 카메라 정리
         if (joinMode === 'qr') {
+            stopScanning();
             stopQRCamera();
         }
 
@@ -282,6 +287,52 @@ export function LandingPage() {
         }
         setIsInputFocused(false);
     };
+
+    const handleQRScanError = useCallback((errorMessage: string) => {
+        setError(errorMessage);
+        setTimeout(() => {
+            if (joinMode === 'qr') setError(null);
+        }, 3000);
+    }, [joinMode]);
+
+    const handleQRCodeScanned = useCallback(async (result: QRScanResult) => {
+        console.log('[LandingPage] Valid QR code scanned:', result);
+
+        try {
+            // Stop camera immediately
+            stopQRCamera();
+
+            // Switch to input mode (like clicking "Enter Manually")
+            setJoinMode('input');
+
+            // Show connecting state
+            setError(null);
+            setIsConnecting(true);
+
+            // Process QR scan (validates peer connection)
+            const peerId = await qrScannerService.processQRScan(result);
+
+            // Auto-fill input field
+            setSessionId(peerId);
+
+            // Auto-trigger connection (same as handleJoin)
+            navigate(`/share?peer=${peerId}`);
+        } catch (err) {
+            console.error('[LandingPage] QR scan processing error:', err);
+            setError(err instanceof Error ? err.message : 'Unable to connect. Invalid ID or Host is offline.');
+            setIsConnecting(false);
+            // Stay in input mode with error shown
+        }
+    }, [navigate, stopQRCamera, setJoinMode, setError, setIsConnecting, setSessionId]);
+
+    // QR Scanner hook
+    const { stopScanning } = useQRScanner({
+        videoRef: qrVideoRef,
+        enabled: joinMode === 'qr' && menuState === 'join' && qrCameraStream !== null,
+        onScan: handleQRCodeScanned,
+        onError: handleQRScanError,
+        scanInterval: 100
+    });
 
     // Share Actions
     const handleCameraShare = () => {
