@@ -30,19 +30,6 @@ export function usePasswordProtection({
 
     // Wait a bit to ensure participant's listener is ready
     setTimeout(() => {
-      // Check if this peer was already approved (same peer reconnecting)
-      if (approvedParticipants.current.has(peerId)) {
-        console.log('[PasswordProtection] Peer already approved, auto-approving:', peerId);
-
-        const approvalMessage: PasswordMessage = {
-          type: 'PASSWORD_APPROVED',
-          payload: {}
-        };
-        peerService.sendDataMessage(peerId, approvalMessage);
-        onParticipantApproved?.(peerId);
-        return;
-      }
-
       // Check if max participants limit is exceeded
       if (currentParticipantCount >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
         console.log('[PasswordProtection] Max participants exceeded. Current:', currentParticipantCount, 'Max:', PARTICIPANT_CONFIG.MAX_PARTICIPANTS);
