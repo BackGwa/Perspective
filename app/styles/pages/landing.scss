@@ -98,6 +98,7 @@
         opacity: 0.75;
         font-family: var(--font-family);
         pointer-events: none;
+        margin-top: var(--spacing-sm);
         z-index: 10;
         text-align: center;
     }
@@ -204,7 +205,7 @@
     color: var(--accent-danger);
     font-size: 0.9rem;
     text-align: center;
-    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
     animation: fadeIn var(--transition-base);
 }
 
@@ -270,7 +271,7 @@
             margin: 0 auto;
             width: 100%;
             max-width: $breakpoint-mobile; // Keep this constraint for the centered menu
-            padding: var(--spacing-md) var(--spacing-lg);
+            padding: var(--spacing-md) var(--spacing-md);
             padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
             height: auto;
             flex: 0 0 auto;
