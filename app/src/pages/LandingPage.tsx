@@ -19,7 +19,6 @@ import { useMediaStream } from '../hooks/useMediaStream';
 import { peerService } from '../services/peerService';
 import type { MediaSourceType } from '../types/media.types';
 import { useQRScanner } from '../hooks/useQRScanner';
-import { qrScannerService } from '../services/qrScannerService';
 import type { QRScanResult } from '../types/qr.types';
 import { useStreamContext } from '../contexts/StreamContext';
 import { PasswordInput } from '../components/shared/PasswordInput';
@@ -468,23 +467,16 @@ export function LandingPage() {
             // 3. Switch menu state (this triggers the UI transition)
             setJoinMode('input');
 
-            // 4. Show connecting state
-            setError(null);
-            setIsConnecting(true);
-
-            // 5. Process QR scan (validates peer connection)
-            // Note: validateConnection is already called inside processQRScan
-            const peerId = await qrScannerService.processQRScan(result);
-
-            // 6. Navigate to share page
-            navigate(`/share?peer=${peerId}`);
+            // 4. Start the unified join flow instead of navigating directly
+            // This ensures we stay on LandingPage for password verification if needed
+            await startJoinFlow(result.peerId);
         } catch (err) {
             console.error('[LandingPage] QR scan processing error:', err);
             setError(err instanceof Error ? err.message : 'Unable to connect. Invalid ID or Host is offline.');
             setIsConnecting(false);
             // Stay in input mode with error shown
         }
-    }, [navigate, stopQRCamera, setJoinMode, setError, setIsConnecting, setSessionId]);
+    }, [stopQRCamera, setJoinMode, setError, setIsConnecting, setSessionId]);
 
     // QR Scanner hook
     const { stopScanning } = useQRScanner({
@@ -492,7 +484,7 @@ export function LandingPage() {
         enabled: joinMode === 'qr' && menuState === 'join' && qrCameraStream !== null,
         onScan: handleQRCodeScanned,
         onError: handleQRScanError,
-        scanInterval: 100
+        scanInterval: 200
     });
 
     // Share Actions
@@ -504,53 +496,30 @@ export function LandingPage() {
     };
 
     // Join Actions
-    const handleJoin = async () => {
-        if (!sessionId.trim()) {
-            setError("Please enter a valid Session ID.");
-            return;
-        }
-
+    const startJoinFlow = async (peerIdToJoin: string) => {
         try {
             setError(null);
             setIsConnecting(true);
 
-            // Extract peer ID (supports both direct peer ID and share links)
-            let peerId = sessionId.trim();
-
-            // Check if input looks like a URL
-            if (sessionId.includes('://') || sessionId.includes('#/share')) {
-                const validation = validateQRCodeURL(sessionId);
-                if (!validation.isValid) {
-                    const errorMsg = getQRErrorMessage(validation.error!);
-                    setError(errorMsg);
-                    setIsConnecting(false);
-                    return;
-                }
-                peerId = validation.peerId!;
-                console.log('[LandingPage] Extracted peer ID from URL:', peerId);
-            }
-
             // Validate connection first
-            await peerService.validateConnection(peerId);
+            await peerService.validateConnection(peerIdToJoin);
 
             // Create a temporary peer to establish data connection
             const tempPeer = new (await import('peerjs')).default();
             setTempPeerForVerification(tempPeer);
 
             tempPeer.on('open', () => {
-                console.log('[LandingPage] Temporary peer opened');
-                const dataConn = tempPeer.connect(peerId);
+                console.log('[LandingPage] Temporary peer opened for verification');
+                const dataConn = tempPeer.connect(peerIdToJoin);
 
                 dataConn.on('open', () => {
-                    console.log('[LandingPage] Data connection established');
+                    console.log('[LandingPage] Data connection established for verification');
                     setIsConnecting(false);
 
-                    // Store connection info FIRST, so the hook can set up listeners
-                    setHostPeerIdForVerification(peerId);
+                    // Store connection info for usePasswordVerification hook
+                    setHostPeerIdForVerification(peerIdToJoin);
                     setDataConnectionForVerification(dataConn);
                     setIsAwaitingPasswordVerification(true);
-
-                    // The usePasswordVerification hook will now handle PASSWORD_REQUEST/PASSWORD_APPROVED
                 });
 
                 dataConn.on('error', (err) => {
@@ -565,7 +534,7 @@ export function LandingPage() {
             });
 
             tempPeer.on('error', (err) => {
-                console.error('[LandingPage] Peer error:', err);
+                console.error('[LandingPage] Peer error during join:', err);
                 setError("Unable to connect. Invalid ID or Host is offline.");
                 setIsConnecting(false);
                 if (tempPeer) {
@@ -575,10 +544,35 @@ export function LandingPage() {
             });
 
         } catch (err) {
-            console.error(err);
+            console.error('[LandingPage] Join flow error:', err);
             setError("Unable to connect. Invalid ID or Host is offline.");
             setIsConnecting(false);
         }
+    };
+
+    const handleJoin = async () => {
+        if (!sessionId.trim()) {
+            setError("Please enter a valid Session ID.");
+            return;
+        }
+
+        // Extract peer ID (supports both direct peer ID and share links)
+        let peerId = sessionId.trim();
+
+        // Check if input looks like a URL
+        if (sessionId.includes('://') || sessionId.includes('#/share')) {
+            const validation = validateQRCodeURL(sessionId);
+            if (!validation.isValid) {
+                const errorMsg = getQRErrorMessage(validation.error!);
+                setError(errorMsg);
+                return;
+            }
+            peerId = validation.peerId!;
+            console.log('[LandingPage] Extracted peer ID from input URL:', peerId);
+            setSessionId(peerId); // Normalise the input field
+        }
+
+        await startJoinFlow(peerId);
     };
 
     // Handle password submission for participant
