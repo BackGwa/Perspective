@@ -353,7 +353,7 @@ export function LandingPage() {
 
         const isDesktop = window.innerWidth > 1024;
 
-        // QR 카메라 정리
+        // Cleanup QR camera
         if (joinMode === 'qr') {
             stopScanning();
             stopQRCamera();
@@ -383,13 +383,13 @@ export function LandingPage() {
         }
 
         if (joinMode === 'qr' && !isDesktop) {
-            // 모바일/태블릿: QR 모드에서는 input 모드로 돌아감
+            // Mobile/Tablet: Return to input mode from QR mode
             setJoinMode('input');
             setIsInputFocused(false);
             setError(null);
         } else {
-            // PC: 항상 root로 돌아감
-            // 모바일: Input 모드에서는 root로 돌아감
+            // PC: Always return to root
+            // Mobile: Return to root from input mode
             setError(null);
             setSessionId('');
             setJoinMode('input');
@@ -403,8 +403,8 @@ export function LandingPage() {
             const isMobile = window.innerWidth <= 1024;
             const constraints: MediaStreamConstraints = {
                 video: isMobile
-                    ? { facingMode: { ideal: 'environment' } } // 모바일: 후면 카메라
-                    : { facingMode: 'user' } // PC: 전면 카메라
+                    ? { facingMode: { ideal: 'environment' } } // Mobile: Rear camera
+                    : { facingMode: 'user' } // PC: Front camera
             };
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -431,11 +431,11 @@ export function LandingPage() {
 
     const handleJoinWithQR = () => {
         if (joinMode === 'qr') {
-            // QR 모드에서 클릭하면 input 모드로 전환
+            // Switch to input mode when clicked in QR mode
             stopQRCamera();
             setJoinMode('input');
         } else {
-            // Input 모드에서 클릭하면 QR 모드로 전환
+            // Switch to QR mode when clicked in input mode
             setJoinMode('qr');
             startQRCamera();
         }

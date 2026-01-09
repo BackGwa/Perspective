@@ -19,7 +19,7 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
     }
   };
 
-  // const qrSize = 256; // Removed in favor of CSS sizing
+
 
   return (
     <div className="qr-share-panel">
