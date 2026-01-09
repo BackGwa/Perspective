@@ -1,11 +1,11 @@
-import Peer, { MediaConnection } from 'peerjs';
+import Peer, { MediaConnection, DataConnection } from 'peerjs';
 import { PEER_CONFIG, PEER_SERVER_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PeerRole } from '../types/peer.types';
 
 type PeerEventCallback = {
   onOpen?: (peerId: string) => void;
   onCall?: (call: MediaConnection) => void;
-  onConnection?: (peerId: string) => void;
+  onConnection?: (peerId: string, dataConnection: DataConnection) => void;
   onDisconnect?: () => void;
   onClose?: () => void;
   onError?: (error: Error) => void;
@@ -14,6 +14,7 @@ type PeerEventCallback = {
 class PeerService {
   private peer: Peer | null = null;
   private activeCalls: Map<string, MediaConnection> = new Map();
+  private dataConnections: Map<string, DataConnection> = new Map();
 
   initializePeer(role: PeerRole, callbacks: PeerEventCallback): Peer {
     if (this.peer) {
@@ -57,7 +58,18 @@ class PeerService {
     if (role === 'host') {
       this.peer.on('connection', (conn) => {
         console.log('Incoming connection from:', conn.peer);
-        callbacks.onConnection?.(conn.peer);
+
+        // Wait for the connection to be fully open before storing and calling callback
+        conn.on('open', () => {
+          console.log('Data connection opened with:', conn.peer);
+          this.dataConnections.set(conn.peer, conn);
+          callbacks.onConnection?.(conn.peer, conn);
+        });
+
+        conn.on('close', () => {
+          console.log('Data connection closed with:', conn.peer);
+          this.dataConnections.delete(conn.peer);
+        });
       });
     }
 
@@ -95,7 +107,7 @@ class PeerService {
     this.activeCalls.set(call.peer, call);
   }
 
-  connectToPeer(hostPeerId: string): Promise<MediaConnection> {
+  connectToPeer(hostPeerId: string): Promise<DataConnection> {
     if (!this.peer) {
       throw new Error('Peer not initialized');
     }
@@ -105,12 +117,18 @@ class PeerService {
 
       dataConnection.on('open', () => {
         console.log('Data connection established with host');
-        resolve(dataConnection as unknown as MediaConnection);
+        this.dataConnections.set(hostPeerId, dataConnection);
+        resolve(dataConnection);
       });
 
       dataConnection.on('error', (error) => {
         console.error('Data connection error:', error);
         reject(this.handlePeerError(error));
+      });
+
+      dataConnection.on('close', () => {
+        console.log('Data connection closed with host');
+        this.dataConnections.delete(hostPeerId);
       });
     });
   }
@@ -132,10 +150,28 @@ class PeerService {
 
   destroyPeer(): void {
     this.closeAllCalls();
+    this.dataConnections.clear();
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
     }
+  }
+
+  sendDataMessage(peerId: string, message: any): void {
+    const conn = this.dataConnections.get(peerId);
+    if (conn && conn.open) {
+      conn.send(message);
+    } else {
+      console.error('Data connection not available for peer:', peerId);
+    }
+  }
+
+  getDataConnection(peerId: string): DataConnection | undefined {
+    return this.dataConnections.get(peerId);
+  }
+
+  getAllDataConnections(): Map<string, DataConnection> {
+    return this.dataConnections;
   }
 
   getPeer(): Peer | null {

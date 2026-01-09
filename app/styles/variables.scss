@@ -1,3 +1,8 @@
+// Sass Breakpoints (Required for @media queries as CSS variables don't work there)
+$breakpoint-mobile: 480px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+
 :root {
   // Background colors
   --bg-primary: #090b0f;
@@ -32,15 +37,18 @@
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
   --border-radius-xl: 16px;
+  --border-radius-2xl: 32px;
   --border-radius-circle: 9999px;
 
   // Spacing
+  --spacing-xxs: 2px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
 
   // Control sizes
   --control-size-sm: 36px;
@@ -51,14 +59,11 @@
   --overlay-bg: rgba(0, 0, 0, 0.7);
   --overlay-bg-light: rgba(0, 0, 0, 0.5);
 
-  // Shadows
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.16);
-  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.20);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.24);
+  // Shadows - REMOVED per requirements
 
   // Transitions
   --transition-base: 0.25s ease-in-out;
+  --transition-menu: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
   // Z-index layers
   --z-base: 1;
@@ -66,4 +71,58 @@
   --z-overlay: 500;
   --z-modal: 1000;
   --z-toast: 2000;
+
+  // Breakpoints
+  --breakpoint-mobile: #{$breakpoint-mobile};
+  --breakpoint-tablet: #{$breakpoint-tablet};
+  --breakpoint-desktop: #{$breakpoint-desktop};
+
+  // Font sizes
+  --font-size-xxs: 0.65rem;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: 1.1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+
+  // Font weights
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  // Opacity
+  --opacity-disabled: 0.5;
+  --opacity-muted: 0.7;
+
+  // Blur
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-lg: 12px;
+
+  // Animation durations
+  --duration-fast: 0.1s;
+  --duration-base: 0.25s;
+  --duration-slow: 0.4s;
+
+  // Layout
+  --layout-max-width: 900px;
+  --menu-max-width: 400px;
+
+  // Icon sizes
+  --icon-size-xs: 18px;
+  --icon-size-sm: 20px;
+  --icon-size-md: 24px;
+  --icon-size-lg: 32px;
+  --icon-size-xl: 48px;
+  --icon-size-2xl: 64px;
+
+  // RGB values for RGBA transparency
+  --rgb-bg-primary: 9, 11, 15;
+  --rgb-text-secondary: 183, 186, 195;
+  --rgb-accent-danger: 255, 107, 107;
+  --rgb-accent-success: 59, 165, 93;
+  --rgb-white: 255, 255, 255;
+  --rgb-black: 0, 0, 0;
 }

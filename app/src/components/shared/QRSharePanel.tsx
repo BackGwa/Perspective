@@ -19,7 +19,7 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
     }
   };
 
-  // const qrSize = 256; // Removed in favor of CSS sizing
+
 
   return (
     <div className="qr-share-panel">
@@ -33,10 +33,6 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
           bgColor="#ffffff"
           fgColor="#000000"
         />
-      </div>
-
-      <div className="qr-share-panel__link">
-        {shareLink}
       </div>
 
       <button

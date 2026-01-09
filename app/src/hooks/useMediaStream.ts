@@ -37,7 +37,7 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
     }
   }, [streamState.stream, clearStream]);
 
-  // ... (toggleVideo loops)
+
 
   const toggleVideo = useCallback((enabled: boolean) => {
     if (streamState.stream) {
@@ -103,23 +103,7 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
       }
     };
   }, [options.cleanupOnUnmount]); // Removed streamState.stream dependency to avoid re-triggering, relying on ref/closure or just simple unmount check if possible. But standard pattern is ok.
-  // Actually, wait. streamState changes. If streamState.stream changes, effect cleanup runs.
-  // We want to cleanup ON UNMOUNT.
-  // The original code:
-  // useEffect(() => { return () => { ... } }, [])
-  // This runs cleanup only on unmount.
-  // But inside cleanup, `streamState.stream` would be stale (initial value) if not using a ref or dependency.
-  // The original code had `[]` dependency?
-  // Let's look at original code. `useEffect(..., [])`. And it used `streamState.stream`. React closures would capture initial `streamState`. 
-  // If `streamState` comes from context hook, it might be updated? No, closure captures the render scope variables.
-  // If `streamState` was null initially, cleanup would do nothing even if stream was set later.
-  // The original hook likely had a bug if `streamState` wasn't a ref or accessed via context directly in cleanup?
-  // Wait, `useStreamContext` returns *current* context value.
-  // But `useEffect` with `[]` closes over the *first render* scope.
-  // So `streamState` inside cleanup is the initial one.
-  // The User didn't complain about leaks, but I should fix this correctly.
 
-  // Update Plan: Use a ref to track current stream for cleanup.
 
   return {
     stream: streamState.stream,

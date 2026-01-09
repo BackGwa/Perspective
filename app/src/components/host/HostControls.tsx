@@ -56,7 +56,7 @@ export function HostControls({
   const isCameraMode = sourceType === 'camera';
 
   return (
-    <div className="controls-overlay">
+    <div className={`controls-overlay ${showQRPanel ? 'controls-overlay--visible' : ''}`}>
       <div ref={containerRef} style={{ position: 'relative', display: 'flex', gap: 'var(--spacing-md)', alignItems: 'center' }}>
         {showQRPanel && (
           <QRSharePanel

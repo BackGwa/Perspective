@@ -5,7 +5,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0) 100%);
+  background: linear-gradient(to top, rgba(var(--rgb-black), 0.9) 0%, rgba(var(--rgb-black), 0) 100%);
   height: 180px;
   /* Explicit height for hit area */
   padding: 0 0 var(--spacing-xl);
@@ -20,7 +20,8 @@
   pointer-events: auto;
   /* Enable hover detection on the area */
 
-  &:hover {
+  &:hover,
+  &--visible {
     opacity: 1;
   }
 }
@@ -29,21 +30,20 @@
 .control-button {
   width: var(--control-size-md);
   height: var(--control-size-md);
-  border-radius: 50%;
+  border-radius: var(--border-radius-circle);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(183, 186, 195, 0.1);
-  border: 1px solid rgba(183, 186, 195, 0.2);
+  background-color: rgba(var(--rgb-text-secondary), 0.1);
+  border: 1px solid rgba(var(--rgb-text-secondary), 0.2);
   color: var(--text-secondary);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--blur-md));
   transition: all var(--transition-base);
 
   @media (hover: hover) {
     &:hover:not(:disabled) {
       background-color: var(--interactive-normal);
       color: var(--bg-primary);
-      box-shadow: var(--shadow-md);
     }
   }
 
@@ -53,7 +53,7 @@
 
   &.control-button--danger {
     color: var(--accent-danger);
-    border-color: rgba(255, 107, 107, 0.2);
+    border-color: rgba(var(--rgb-accent-danger), 0.2);
 
     @media (hover: hover) {
       &:hover:not(:disabled) {
@@ -66,7 +66,7 @@
 
   &.control-button--success {
     color: var(--accent-success);
-    border-color: rgba(59, 165, 93, 0.2);
+    border-color: rgba(var(--rgb-accent-success), 0.2);
 
     @media (hover: hover) {
       &:hover:not(:disabled) {
@@ -86,8 +86,8 @@
 
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
     fill: currentColor;
     stroke: currentColor;
     stroke-width: 0.5;
@@ -103,16 +103,15 @@
   margin-bottom: var(--spacing-sm);
   padding: 0.4rem 0.8rem;
   background-color: var(--bg-secondary);
-  border: 1px solid rgba(183, 186, 195, 0.1);
+  border: 1px solid rgba(var(--rgb-text-secondary), 0.1);
   color: var(--text-primary);
   border-radius: var(--border-radius-sm);
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-family: var(--font-family);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: all var(--transition-base);
-  box-shadow: var(--shadow-lg);
 }
 
 @media (hover: hover) {
@@ -121,15 +120,15 @@
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: $breakpoint-desktop) {
   .controls-overlay {
     opacity: 1;
     background: var(--bg-primary);
     backdrop-filter: blur(10px);
     height: auto;
     padding: 0;
-    gap: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: var(--spacing-sm);
+    border-top: 1px solid rgba(var(--rgb-white), 0.1);
     padding: var(--spacing-md) 0;
   }
 
@@ -138,8 +137,8 @@
     height: 56px;
 
     svg {
-      width: 24px;
-      height: 24px;
+      width: var(--icon-size-md);
+      height: var(--icon-size-md);
     }
 
     .control-tooltip {

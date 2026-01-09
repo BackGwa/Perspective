@@ -1,32 +1,71 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { MediaConnection } from 'peerjs';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MediaConnection, DataConnection } from 'peerjs';
+import type Peer from 'peerjs';
 import { peerService } from '../services/peerService';
 import { useStreamContext } from '../contexts/StreamContext';
+import { usePasswordProtection } from './usePasswordProtection';
 import type { PeerRole } from '../types/peer.types';
 
 interface UsePeerConnectionOptions {
   role: PeerRole;
   stream?: MediaStream | null;
   hostPeerId?: string | null;
+  existingPeer?: Peer | null; // Reuse existing peer for participant
 }
 
-export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectionOptions) {
+export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: UsePeerConnectionOptions) {
   const {
     peerId,
     setPeerId,
     connectionStatus,
     setConnectionStatus,
-    setRemoteStream
+    setRemoteStream,
+    sessionPassword
   } = useStreamContext();
 
   const participantsRef = useRef<Map<string, MediaConnection>>(new Map());
   const pendingParticipantsRef = useRef<Set<string>>(new Set());
+  const pendingPasswordApprovalRef = useRef<Set<string>>(new Set());
   const streamRef = useRef<MediaStream | null>(stream || null);
   const hasInitialized = useRef(false);
+  const [dataConnection, setDataConnection] = useState<DataConnection | null>(null);
 
   useEffect(() => {
     streamRef.current = stream || null;
   }, [stream]);
+
+  // Password protection for host
+  const handleParticipantApproved = useCallback((participantId: string) => {
+    console.log('[usePeerConnection] Participant approved:', participantId);
+    pendingPasswordApprovalRef.current.delete(participantId);
+
+    const currentStream = streamRef.current;
+    if (currentStream) {
+      console.log('[usePeerConnection] Calling approved participant:', participantId);
+      const call = peerService.callPeer(participantId, currentStream);
+      participantsRef.current.set(participantId, call);
+
+      call.on('close', () => {
+        console.log('Participant disconnected:', participantId);
+        participantsRef.current.delete(participantId);
+      });
+    } else {
+      // Stream not ready yet, add to pending participants
+      pendingParticipantsRef.current.add(participantId);
+    }
+  }, []);
+
+  const handleParticipantRejected = useCallback((participantId: string) => {
+    console.log('[usePeerConnection] Participant rejected:', participantId);
+    pendingPasswordApprovalRef.current.delete(participantId);
+  }, []);
+
+  const { setupPasswordListener, isPasswordProtected } = usePasswordProtection({
+    sessionPassword,
+    currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
+    onParticipantApproved: handleParticipantApproved,
+    onParticipantRejected: handleParticipantRejected
+  });
 
   const initializeHost = useCallback(() => {
     if (hasInitialized.current) return;
@@ -39,24 +78,16 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
         setPeerId(id);
         setConnectionStatus('waiting_for_peer');
       },
-      onConnection: (participantId: string) => {
+      onConnection: (participantId: string, dataConn: DataConnection) => {
         console.log('Participant connected:', participantId);
         setConnectionStatus('connected');
 
-        const currentStream = streamRef.current;
-        if (currentStream) {
-          console.log('Stream available, calling participant:', participantId);
-          const call = peerService.callPeer(participantId, currentStream);
-          participantsRef.current.set(participantId, call);
+        // Setup password listener - this will handle approval/rejection
+        pendingPasswordApprovalRef.current.add(participantId);
+        setupPasswordListener(participantId, dataConn);
 
-          call.on('close', () => {
-            console.log('Participant disconnected:', participantId);
-            participantsRef.current.delete(participantId);
-          });
-        } else {
-          console.log('Stream not ready, adding participant to pending list');
-          pendingParticipantsRef.current.add(participantId);
-        }
+        // Note: callPeer will be called in handleParticipantApproved callback
+        // after password verification (or immediately if no password)
       },
       onDisconnect: () => {
         setConnectionStatus('disconnected');
@@ -77,16 +108,64 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
     if (hasInitialized.current || !hostPeerId) return;
     hasInitialized.current = true;
 
-    setConnectionStatus('initializing');
+    // Check if we have an existing peer (from password verification)
+    if (existingPeer) {
+      console.log('[usePeerConnection] Reusing existing peer from password verification');
 
+      // Set peer ID from existing peer
+      if (existingPeer.id) {
+        setPeerId(existingPeer.id);
+      }
+
+      // Add call listener - host may call after we navigate here
+      existingPeer.on('call', (call: MediaConnection) => {
+        console.log('[usePeerConnection] Receiving call from host on existing peer');
+
+        call.on('stream', (remoteStream: MediaStream) => {
+          console.log('[usePeerConnection] Received remote stream');
+          setRemoteStream(remoteStream);
+          setConnectionStatus('connected');
+        });
+
+        call.on('close', () => {
+          console.log('[usePeerConnection] Host ended the call');
+          setRemoteStream(null);
+          setConnectionStatus('disconnected');
+        });
+
+        peerService.answerCall(call);
+      });
+
+      existingPeer.on('disconnected', () => {
+        console.log('[usePeerConnection] Existing peer disconnected from server');
+      });
+
+      existingPeer.on('error', (error: Error) => {
+        console.error('[usePeerConnection] Peer error:', error);
+        setConnectionStatus('failed');
+      });
+
+      existingPeer.on('close', () => {
+        console.log('[usePeerConnection] Existing peer closed');
+        setConnectionStatus('closed');
+      });
+
+      // Set connecting status while waiting for host's call
+      setConnectionStatus('connecting');
+
+      return existingPeer;
+    }
+
+    // No existing peer - create new one (shouldn't happen with password flow)
     const peer = peerService.initializePeer(role, {
       onOpen: (id: string) => {
         setPeerId(id);
         setConnectionStatus('connecting');
 
         peerService.connectToPeer(hostPeerId)
-          .then(() => {
+          .then((dataConn) => {
             console.log('Connected to host, waiting for call...');
+            setDataConnection(dataConn);
           })
           .catch((error) => {
             console.error('Failed to connect to host:', error);
@@ -124,7 +203,7 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
     });
 
     return peer;
-  }, [role, hostPeerId, setPeerId, setConnectionStatus, setRemoteStream]);
+  }, [role, hostPeerId, existingPeer, setPeerId, setConnectionStatus, setRemoteStream]);
 
   const disconnect = useCallback(() => {
     peerService.destroyPeer();
@@ -144,6 +223,13 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
     return null;
   }, [peerId, role, hostPeerId]);
 
+  // Reset hasInitialized when existingPeer changes (for new sessions)
+  useEffect(() => {
+    if (role === 'participant' && !existingPeer) {
+      hasInitialized.current = false;
+    }
+  }, [role, existingPeer]);
+
   useEffect(() => {
     if (role === 'host') {
       initializeHost();
@@ -151,7 +237,7 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
       initializeParticipant();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, hostPeerId]);
+  }, [role, hostPeerId, existingPeer]);
 
   // Cleanup only on unmount
   useEffect(() => {
@@ -199,6 +285,8 @@ export function usePeerConnection({ role, stream, hostPeerId }: UsePeerConnectio
     connectionStatus,
     disconnect,
     getShareLink,
-    participantCount: participantsRef.current.size
+    participantCount: participantsRef.current.size,
+    dataConnection,
+    isPasswordProtected: role === 'host' ? isPasswordProtected : false
   };
 }
