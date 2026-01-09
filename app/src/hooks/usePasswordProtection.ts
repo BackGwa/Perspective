@@ -4,6 +4,7 @@ import { peerService } from '../services/peerService';
 import { passwordService } from '../services/passwordService';
 import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PasswordMessage } from '../types/password.types';
+import { isValidPasswordMessage } from '../types/password.types';
 
 interface UsePasswordProtectionOptions {
   sessionPassword: string | null;
@@ -74,10 +75,14 @@ export function usePasswordProtection({
     }, 100);
 
     // Listen for password response
-    dataConnection.on('data', (data: any) => {
-      if (data && typeof data === 'object' && data.type === 'PASSWORD_RESPONSE') {
-        const message = data as PasswordMessage;
-        const providedPassword = message.payload?.password || '';
+    dataConnection.on('data', (data: unknown) => {
+      if (!isValidPasswordMessage(data)) {
+        console.warn('[PasswordProtection] Invalid message received:', data);
+        return;
+      }
+
+      if (data.type === 'PASSWORD_RESPONSE') {
+        const providedPassword = data.payload?.password || '';
 
         // Get current retry count
         const currentRetries = participantRetries.current.get(peerId) || 0;

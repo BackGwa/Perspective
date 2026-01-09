@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DataConnection } from 'peerjs';
-import { ERROR_MESSAGES } from '../config/constants';
+import { ERROR_MESSAGES, PASSWORD_CONFIG } from '../config/constants';
 import type { PasswordMessage } from '../types/password.types';
+import { hashPassword } from '../utils/passwordHasher';
+import { isValidPasswordMessage } from '../types/password.types';
 
 interface UsePasswordVerificationOptions {
   hostPeerId: string | null;
@@ -28,12 +30,13 @@ export function usePasswordVerification({
   useEffect(() => {
     if (!dataConnection || !hostPeerId) return;
 
-    const handleData = (data: any) => {
-      if (!data || typeof data !== 'object') return;
+    const handleData = (data: unknown) => {
+      if (!isValidPasswordMessage(data)) {
+        console.warn('[PasswordVerification] Invalid message received:', data);
+        return;
+      }
 
-      const message = data as PasswordMessage;
-
-      switch (message.type) {
+      switch (data.type) {
         case 'PASSWORD_REQUEST':
           console.log('[PasswordVerification] Password required');
           setIsPasswordRequired(true);
@@ -51,9 +54,9 @@ export function usePasswordVerification({
           break;
 
         case 'PASSWORD_REJECTED':
-          console.log('[PasswordVerification] Password rejected:', message.payload);
-          const remainingRetries = message.payload?.remainingRetries ?? 0;
-          const reason = message.payload?.reason || ERROR_MESSAGES.PASSWORD_INCORRECT;
+          console.log('[PasswordVerification] Password rejected:', data.payload);
+          const remainingRetries = data.payload?.remainingRetries ?? 0;
+          const reason = data.payload?.reason || ERROR_MESSAGES.PASSWORD_INCORRECT;
 
           setIsVerifying(false);
           setRetryCount(prev => prev + 1);
@@ -74,7 +77,7 @@ export function usePasswordVerification({
           console.log('[PasswordVerification] Max participants exceeded');
           setIsVerifying(false);
           setIsPasswordRequired(false);
-          setErrorMessage(message.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
+          setErrorMessage(data.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
           onMaxRetriesExceeded?.();
           break;
       }
@@ -87,7 +90,7 @@ export function usePasswordVerification({
     };
   }, [dataConnection, hostPeerId, onApproved, onRejected, onMaxRetriesExceeded]);
 
-  const submitPassword = useCallback((password: string) => {
+  const submitPassword = useCallback(async (password: string) => {
     if (!dataConnection) {
       console.error('[PasswordVerification] Cannot submit password: no connection');
       return;
@@ -95,17 +98,29 @@ export function usePasswordVerification({
 
     if (!dataConnection.open) {
       console.error('[PasswordVerification] Data connection not open');
-      setErrorMessage('Connection lost. Please try again.');
+      setErrorMessage(ERROR_MESSAGES.CONNECTION_LOST);
+      return;
+    }
+
+    if (password.length < PASSWORD_CONFIG.MIN_LENGTH) {
+      setErrorMessage(ERROR_MESSAGES.PASSWORD_TOO_SHORT);
+      return;
+    }
+
+    if (password.length > PASSWORD_CONFIG.MAX_LENGTH) {
+      setErrorMessage(ERROR_MESSAGES.PASSWORD_TOO_LONG);
       return;
     }
 
     setIsVerifying(true);
     setErrorMessage(null);
 
+    const hashedPassword = await hashPassword(password);
+
     const responseMessage: PasswordMessage = {
       type: 'PASSWORD_RESPONSE',
       payload: {
-        password
+        password: hashedPassword
       }
     };
 

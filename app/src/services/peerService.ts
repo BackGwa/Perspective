@@ -78,7 +78,7 @@ class PeerService {
 
   callPeer(peerId: string, stream: MediaStream): MediaConnection {
     if (!this.peer) {
-      throw new Error('Peer not initialized');
+      throw new Error(ERROR_MESSAGES.PEER_NOT_INITIALIZED);
     }
 
     const call = this.peer.call(peerId, stream);
@@ -109,7 +109,7 @@ class PeerService {
 
   connectToPeer(hostPeerId: string): Promise<DataConnection> {
     if (!this.peer) {
-      throw new Error('Peer not initialized');
+      throw new Error(ERROR_MESSAGES.PEER_NOT_INITIALIZED);
     }
 
     return new Promise((resolve, reject) => {
@@ -220,7 +220,7 @@ class PeerService {
       const timeoutId = setTimeout(() => {
         if (!responseHandled) {
           cleanup();
-          reject(new Error('Connection timed out'));
+          reject(new Error(ERROR_MESSAGES.CONNECTION_TIMED_OUT));
         }
       }, timeoutMs);
 
@@ -236,14 +236,14 @@ class PeerService {
         conn.on('error', () => {
           clearTimeout(timeoutId);
           cleanup();
-          reject(new Error('Could not connect to host'));
+          reject(new Error(ERROR_MESSAGES.COULD_NOT_CONNECT_TO_HOST));
         });
 
         conn.on('close', () => {
           if (!responseHandled) {
             clearTimeout(timeoutId);
             cleanup();
-            reject(new Error('Connection closed immediately'));
+            reject(new Error(ERROR_MESSAGES.CONNECTION_CLOSED_IMMEDIATELY));
           }
         });
       });

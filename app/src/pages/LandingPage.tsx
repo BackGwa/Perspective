@@ -24,6 +24,8 @@ import { useStreamContext } from '../contexts/StreamContext';
 import { PasswordInput } from '../components/shared/PasswordInput';
 import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
+import { ERROR_MESSAGES } from '../config/constants';
+import { hashPassword } from '../utils/passwordHasher';
 
 export function LandingPage() {
     const navigate = useNavigate();
@@ -199,7 +201,7 @@ export function LandingPage() {
         },
         onMaxRetriesExceeded: () => {
             console.log('[LandingPage] Max retries exceeded');
-            setError('Maximum password attempts exceeded.');
+            setError(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
 
             // Clean up temporary peer
             if (tempPeerForVerification) {
@@ -255,7 +257,17 @@ export function LandingPage() {
 
                         dataConn.on('error', (err) => {
                             console.error('[LandingPage] Data connection error:', err);
-                            setError("Connection error. Please try again.");
+                            setError(ERROR_MESSAGES.CONNECTION_ERROR);
+                            setIsConnecting(false);
+                            if (tempPeer) {
+                                tempPeer.destroy();
+                                setTempPeerForVerification(null);
+                            }
+                        });
+
+                        tempPeer.on('error', (err) => {
+                            console.error('[LandingPage] Peer error:', err);
+                            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
                             setIsConnecting(false);
                             if (tempPeer) {
                                 tempPeer.destroy();
@@ -263,19 +275,9 @@ export function LandingPage() {
                             }
                         });
                     });
-
-                    tempPeer.on('error', (err) => {
-                        console.error('[LandingPage] Peer error:', err);
-                        setError("Unable to connect. Invalid ID or Host is offline.");
-                        setIsConnecting(false);
-                        if (tempPeer) {
-                            tempPeer.destroy();
-                            setTempPeerForVerification(null);
-                        }
-                    });
                 } catch (err) {
                     console.error(err);
-                    setError("Unable to connect. Invalid ID or Host is offline.");
+                    setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
                     setIsConnecting(false);
                 }
             }, 100);
@@ -310,8 +312,9 @@ export function LandingPage() {
 
             // Save password to context (empty string = public room)
             const trimmedPassword = hostPassword.trim();
-            setSessionPassword(trimmedPassword || null);
-            console.log('[LandingPage] Password set:', trimmedPassword ? 'Protected' : 'Public');
+            const hashedPassword = trimmedPassword ? await hashPassword(trimmedPassword) : null;
+            setSessionPassword(hashedPassword);
+            console.log('[LandingPage] Password set:', hashedPassword ? 'Protected' : 'Public');
 
             const stream = await startCapture(source);
             console.log('[LandingPage] Capture successful, stream:', stream);
@@ -324,11 +327,11 @@ export function LandingPage() {
             if (err instanceof Error) {
                 // If permission denied or cancelled, show error here
                 setError(err.message === 'Permission denied' ?
-                    'Permission denied. Please allow access to continue.' :
+                    ERROR_MESSAGES.PERMISSION_DENIED_GENERIC :
                     err.message
                 );
             } else {
-                setError('Failed to start sharing.');
+                setError(ERROR_MESSAGES.FAILED_TO_START_SHARING);
             }
         }
     };
@@ -415,7 +418,7 @@ export function LandingPage() {
             }
         } catch (err) {
             console.error('Failed to start QR camera:', err);
-            setError('Failed to access camera. Please check permissions.');
+            setError(ERROR_MESSAGES.FAILED_TO_ACCESS_CAMERA);
         }
     };
 
@@ -472,7 +475,7 @@ export function LandingPage() {
             await startJoinFlow(result.peerId);
         } catch (err) {
             console.error('[LandingPage] QR scan processing error:', err);
-            setError(err instanceof Error ? err.message : 'Unable to connect. Invalid ID or Host is offline.');
+            setError(err instanceof Error ? err.message : ERROR_MESSAGES.UNABLE_TO_CONNECT);
             setIsConnecting(false);
             // Stay in input mode with error shown
         }
@@ -557,7 +560,7 @@ export function LandingPage() {
 
                 dataConn.on('error', (err) => {
                     console.error('[LandingPage] Data connection error:', err);
-                    setError("Connection error. Please try again.");
+                    setError(ERROR_MESSAGES.CONNECTION_ERROR);
                     setIsConnecting(false);
                     if (tempPeer) {
                         tempPeer.destroy();
@@ -568,7 +571,7 @@ export function LandingPage() {
 
             tempPeer.on('error', (err) => {
                 console.error('[LandingPage] Peer error during join:', err);
-                setError("Unable to connect. Invalid ID or Host is offline.");
+                setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
                 setIsConnecting(false);
                 if (tempPeer) {
                     tempPeer.destroy();
@@ -578,14 +581,14 @@ export function LandingPage() {
 
         } catch (err) {
             console.error('[LandingPage] Join flow error:', err);
-            setError("Unable to connect. Invalid ID or Host is offline.");
+            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
             setIsConnecting(false);
         }
     };
 
     const handleJoin = async () => {
         if (!sessionId.trim()) {
-            setError("Please enter a valid Session ID.");
+            setError(ERROR_MESSAGES.PLEASE_ENTER_VALID_SESSION_ID);
             return;
         }
 
@@ -611,7 +614,7 @@ export function LandingPage() {
     // Handle password submission for participant
     const handlePasswordSubmit = () => {
         if (!participantPassword.trim()) {
-            setError('Please enter a password');
+            setError(ERROR_MESSAGES.PLEASE_ENTER_PASSWORD);
             return;
         }
         setError(null);

@@ -187,7 +187,7 @@ class MediaService {
 
   async switchCamera(currentStream: MediaStream): Promise<MediaStream> {
     if (this.sourceType !== 'camera') {
-      throw new Error('Camera switching is only available in camera mode');
+      throw new Error(ERROR_MESSAGES.CAMERA_SWITCHING_ONLY_AVAILABLE);
     }
 
     // Toggle facing mode
@@ -238,12 +238,12 @@ class MediaService {
           return new Error(ERROR_MESSAGES.PERMISSION_DENIED);
         case 'NotFoundError':
         case 'DevicesNotFoundError':
-          return new Error('No camera or microphone found on this device.');
+          return new Error(ERROR_MESSAGES.NO_CAMERA_OR_MICROPHONE);
         case 'NotReadableError':
         case 'TrackStartError':
-          return new Error('Device is already in use by another application.');
+          return new Error(ERROR_MESSAGES.DEVICE_ALREADY_IN_USE);
         case 'OverconstrainedError':
-          return new Error('Camera does not support the requested constraints.');
+          return new Error(ERROR_MESSAGES.CAMERA_CONSTRAINTS_NOT_SUPPORTED);
         case 'NotSupportedError':
           return new Error(ERROR_MESSAGES.BROWSER_NOT_SUPPORTED);
         default:
