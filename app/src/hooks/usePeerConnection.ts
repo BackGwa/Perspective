@@ -62,6 +62,7 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
 
   const { setupPasswordListener, isPasswordProtected } = usePasswordProtection({
     sessionPassword,
+    currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
     onParticipantApproved: handleParticipantApproved,
     onParticipantRejected: handleParticipantRejected
   });

@@ -2,7 +2,8 @@ export type PasswordMessageType =
   | 'PASSWORD_REQUEST'
   | 'PASSWORD_RESPONSE'
   | 'PASSWORD_APPROVED'
-  | 'PASSWORD_REJECTED';
+  | 'PASSWORD_REJECTED'
+  | 'MAX_PARTICIPANTS_EXCEEDED';
 
 export interface PasswordMessage {
   type: PasswordMessageType;

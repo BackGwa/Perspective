@@ -2,16 +2,19 @@ import { useRef, useCallback } from 'react';
 import { DataConnection } from 'peerjs';
 import { peerService } from '../services/peerService';
 import { passwordService } from '../services/passwordService';
+import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PasswordMessage } from '../types/password.types';
 
 interface UsePasswordProtectionOptions {
   sessionPassword: string | null;
+  currentParticipantCount: number;
   onParticipantApproved?: (peerId: string) => void;
   onParticipantRejected?: (peerId: string) => void;
 }
 
 export function usePasswordProtection({
   sessionPassword,
+  currentParticipantCount,
   onParticipantApproved,
   onParticipantRejected
 }: UsePasswordProtectionOptions) {
@@ -37,6 +40,26 @@ export function usePasswordProtection({
         };
         peerService.sendDataMessage(peerId, approvalMessage);
         onParticipantApproved?.(peerId);
+        return;
+      }
+
+      // Check if max participants limit is exceeded
+      if (currentParticipantCount >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
+        console.log('[PasswordProtection] Max participants exceeded. Current:', currentParticipantCount, 'Max:', PARTICIPANT_CONFIG.MAX_PARTICIPANTS);
+
+        const rejectionMessage: PasswordMessage = {
+          type: 'MAX_PARTICIPANTS_EXCEEDED',
+          payload: {
+            reason: ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED
+          }
+        };
+        peerService.sendDataMessage(peerId, rejectionMessage);
+        onParticipantRejected?.(peerId);
+
+        // Close the data connection
+        setTimeout(() => {
+          dataConnection.close();
+        }, 100);
         return;
       }
 
@@ -125,7 +148,7 @@ export function usePasswordProtection({
         }
       }
     });
-  }, [sessionPassword, onParticipantApproved, onParticipantRejected]);
+  }, [sessionPassword, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
 
   const resetParticipantRetries = useCallback((peerId: string) => {
     participantRetries.current.delete(peerId);

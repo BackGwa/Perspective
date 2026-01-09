@@ -69,6 +69,14 @@ export function usePasswordVerification({
             onRejected?.(reason);
           }
           break;
+
+        case 'MAX_PARTICIPANTS_EXCEEDED':
+          console.log('[PasswordVerification] Max participants exceeded');
+          setIsVerifying(false);
+          setIsPasswordRequired(false);
+          setErrorMessage(message.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
+          onMaxRetriesExceeded?.();
+          break;
       }
     };
 
