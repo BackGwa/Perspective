@@ -58,14 +58,18 @@ class PeerService {
     if (role === 'host') {
       this.peer.on('connection', (conn) => {
         console.log('Incoming connection from:', conn.peer);
-        this.dataConnections.set(conn.peer, conn);
+
+        // Wait for the connection to be fully open before storing and calling callback
+        conn.on('open', () => {
+          console.log('Data connection opened with:', conn.peer);
+          this.dataConnections.set(conn.peer, conn);
+          callbacks.onConnection?.(conn.peer, conn);
+        });
 
         conn.on('close', () => {
           console.log('Data connection closed with:', conn.peer);
           this.dataConnections.delete(conn.peer);
         });
-
-        callbacks.onConnection?.(conn.peer, conn);
       });
     }
 

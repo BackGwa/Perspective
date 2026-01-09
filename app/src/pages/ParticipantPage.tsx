@@ -13,7 +13,7 @@ export function ParticipantPage() {
   const hostPeerId = searchParams.get('peer');
   const [isMuted, setIsMuted] = useState(true);
 
-  const { connectionStatus, remoteStream, participantPeer, setParticipantPeer } = useStreamContext();
+  const { connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer } = useStreamContext();
 
   // Check if accessed directly via link (no existing peer from password verification)
   useEffect(() => {
@@ -47,6 +47,11 @@ export function ParticipantPage() {
     // Skip status checks if no participantPeer (still waiting for password verification)
     if (!participantPeer) return;
 
+    // Skip if still in initial/connecting states
+    if (connectionStatus === 'idle' || connectionStatus === 'initializing' || connectionStatus === 'connecting') {
+      return;
+    }
+
     if (connectionStatus === 'failed') {
       navigate('/', { state: { error: ERROR_MESSAGES.PEER_CONNECTION_FAILED } });
     } else if (connectionStatus === 'closed' || connectionStatus === 'disconnected') {
@@ -61,11 +66,15 @@ export function ParticipantPage() {
 
 
   const handleLeave = () => {
-    // Clean up participant peer when leaving
+    // Clean up participant peer and reset state when leaving
     if (participantPeer) {
+      // Remove all event listeners before destroying to prevent status changes
+      participantPeer.removeAllListeners();
       participantPeer.destroy();
       setParticipantPeer(null);
     }
+    setRemoteStream(null);
+    setConnectionStatus('idle');
     navigate('/');
   };
 
@@ -74,11 +83,15 @@ export function ParticipantPage() {
     return () => {
       if (participantPeer) {
         console.log('[ParticipantPage] Cleaning up participant peer on unmount');
+        // Remove all event listeners before destroying to prevent status changes
+        participantPeer.removeAllListeners();
         participantPeer.destroy();
         setParticipantPeer(null);
       }
+      setRemoteStream(null);
+      setConnectionStatus('idle');
     };
-  }, [participantPeer, setParticipantPeer]);
+  }, [participantPeer, setParticipantPeer, setRemoteStream, setConnectionStatus]);
 
   const isConnecting = ['initializing', 'connecting', 'waiting_for_peer'].includes(connectionStatus);
 

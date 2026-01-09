@@ -108,8 +108,6 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
     if (hasInitialized.current || !hostPeerId) return;
     hasInitialized.current = true;
 
-    setConnectionStatus('initializing');
-
     // Check if we have an existing peer (from password verification)
     if (existingPeer) {
       console.log('[usePeerConnection] Reusing existing peer from password verification');
@@ -119,18 +117,18 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
         setPeerId(existingPeer.id);
       }
 
-      // Setup event listeners on existing peer
+      // Add call listener - host may call after we navigate here
       existingPeer.on('call', (call: MediaConnection) => {
-        console.log('Receiving call from host on existing peer');
+        console.log('[usePeerConnection] Receiving call from host on existing peer');
 
         call.on('stream', (remoteStream: MediaStream) => {
-          console.log('Received remote stream', remoteStream);
+          console.log('[usePeerConnection] Received remote stream');
           setRemoteStream(remoteStream);
           setConnectionStatus('connected');
         });
 
         call.on('close', () => {
-          console.log('Host ended the call');
+          console.log('[usePeerConnection] Host ended the call');
           setRemoteStream(null);
           setConnectionStatus('disconnected');
         });
@@ -139,19 +137,20 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
       });
 
       existingPeer.on('disconnected', () => {
-        setConnectionStatus('disconnected');
+        console.log('[usePeerConnection] Existing peer disconnected from server');
       });
 
       existingPeer.on('error', (error: Error) => {
-        console.error('Peer error:', error);
+        console.error('[usePeerConnection] Peer error:', error);
         setConnectionStatus('failed');
       });
 
       existingPeer.on('close', () => {
+        console.log('[usePeerConnection] Existing peer closed');
         setConnectionStatus('closed');
       });
 
-      // Data connection should already be established from password verification
+      // Set connecting status while waiting for host's call
       setConnectionStatus('connecting');
 
       return existingPeer;
@@ -224,6 +223,13 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
     return null;
   }, [peerId, role, hostPeerId]);
 
+  // Reset hasInitialized when existingPeer changes (for new sessions)
+  useEffect(() => {
+    if (role === 'participant' && !existingPeer) {
+      hasInitialized.current = false;
+    }
+  }, [role, existingPeer]);
+
   useEffect(() => {
     if (role === 'host') {
       initializeHost();
@@ -231,7 +237,7 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
       initializeParticipant();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, hostPeerId]);
+  }, [role, hostPeerId, existingPeer]);
 
   // Cleanup only on unmount
   useEffect(() => {

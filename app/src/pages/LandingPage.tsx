@@ -28,7 +28,7 @@ import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
 export function LandingPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setSessionPassword, setParticipantPeer } = useStreamContext();
+    const { setSessionPassword, setParticipantPeer, setRemoteStream, setConnectionStatus } = useStreamContext();
 
     const [menuState, setMenuState] = useState<MenuState>('root');
     const [error, setError] = useState<string | null>(null);
@@ -501,6 +501,15 @@ export function LandingPage() {
             setError(null);
             setIsConnecting(true);
 
+            // Clean up any previous session state
+            if (tempPeerForVerification) {
+                tempPeerForVerification.destroy();
+                setTempPeerForVerification(null);
+            }
+            setParticipantPeer(null);
+            setRemoteStream(null);
+            setConnectionStatus('idle');
+
             // Validate connection first
             await peerService.validateConnection(peerIdToJoin);
 
@@ -510,16 +519,40 @@ export function LandingPage() {
 
             tempPeer.on('open', () => {
                 console.log('[LandingPage] Temporary peer opened for verification');
+
                 const dataConn = tempPeer.connect(peerIdToJoin);
 
                 dataConn.on('open', () => {
                     console.log('[LandingPage] Data connection established for verification');
-                    setIsConnecting(false);
 
-                    // Store connection info for usePasswordVerification hook
-                    setHostPeerIdForVerification(peerIdToJoin);
-                    setDataConnectionForVerification(dataConn);
-                    setIsAwaitingPasswordVerification(true);
+                    // Set up data listener IMMEDIATELY to catch host's initial response
+                    // This prevents missing PASSWORD_REQUEST or PASSWORD_APPROVED messages
+                    let isPasswordRoom = false;
+                    dataConn.on('data', (data: any) => {
+                        if (!data || typeof data !== 'object') return;
+
+                        if (data.type === 'PASSWORD_APPROVED') {
+                            // Handle PASSWORD_APPROVED for both public rooms and after password verification
+                            console.log('[LandingPage] Password approved, navigating');
+                            setIsConnecting(false);
+                            setParticipantPeer(tempPeer);
+                            setTempPeerForVerification(null);
+                            navigate(`/share?peer=${peerIdToJoin}`, {
+                                state: { fromPasswordVerification: true }
+                            });
+                        } else if (data.type === 'PASSWORD_REQUEST' && !isPasswordRoom) {
+                            // Password required - show password input (only handle once)
+                            isPasswordRoom = true;
+                            console.log('[LandingPage] Password required');
+                            setIsConnecting(false);
+                            setIsAwaitingPasswordVerification(true);
+                            setHostPeerIdForVerification(peerIdToJoin);
+                            setDataConnectionForVerification(dataConn);
+                        } else if (data.type === 'PASSWORD_REJECTED') {
+                            // Password incorrect - show error (handled by usePasswordVerification)
+                            console.log('[LandingPage] Password rejected');
+                        }
+                    });
                 });
 
                 dataConn.on('error', (err) => {
