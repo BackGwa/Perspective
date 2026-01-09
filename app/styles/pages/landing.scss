@@ -141,6 +141,7 @@
     color: var(--text-primary);
     font-size: 1.1rem;
     font-family: var(--font-family);
+    text-align: center;
     outline: none;
     transition: all var(--transition-base);
 
@@ -158,6 +159,22 @@
         opacity: 0.5;
         cursor: not-allowed;
     }
+}
+
+.password-input-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.password-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-family: var(--font-family);
+    text-align: center;
+    padding-left: 0.5rem;
 }
 
 .error-message {
@@ -262,6 +279,10 @@
         padding: 1rem;
         font-size: 1rem;
     }
+
+    .password-label {
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -286,6 +307,10 @@
     }
 
     .error-message {
+        font-size: 0.85rem;
+    }
+
+    .password-label {
         font-size: 0.85rem;
     }
 }

@@ -73,5 +73,17 @@ export const ERROR_MESSAGES = {
   PEER_CONNECTION_FAILED: 'Failed to establish peer connection. Please check your network.',
   INVALID_PEER_ID: 'Invalid or expired share link. Please request a new link from the host.',
   MEDIA_CAPTURE_FAILED: 'Failed to capture media stream. Please check your device.',
-  NETWORK_ERROR: 'Network error occurred. Please check your internet connection.'
+  NETWORK_ERROR: 'Network error occurred. Please check your internet connection.',
+  PASSWORD_INCORRECT: 'Incorrect password. Please try again.',
+  PASSWORD_MAX_RETRIES: 'Maximum password attempts exceeded. Please request a new link from the host.',
+  PASSWORD_REQUIRED: 'This session requires a password.'
+} as const;
+
+const getMaxPasswordRetries = (): number => {
+  const retries = import.meta.env.VITE_MAX_PASSWORD_RETRIES;
+  return retries ? parseInt(retries, 10) : 5;
+};
+
+export const PASSWORD_CONFIG = {
+  MAX_RETRIES: getMaxPasswordRetries()
 } as const;
