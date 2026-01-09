@@ -106,41 +106,11 @@
   }
 }
 
-@media (max-width: var(--breakpoint-desktop)) {
+@media (max-width: $breakpoint-desktop) {
   .host-page {
     touch-action: manipulation;
   }
 
-  .local-preview {
-    &__placeholder {
-      svg {
-        width: 64px;
-        height: 64px;
-      }
-    }
-  }
-
-  .share-link-display {
-    margin: var(--spacing-md);
-    padding: var(--spacing-md);
-
-    &__title {
-      font-size: var(--font-size-xs);
-    }
-
-    &__input {
-      font-size: var(--font-size-xs);
-      padding: var(--spacing-sm);
-    }
-
-    &__button {
-      padding: var(--spacing-sm) var(--spacing-md);
-      font-size: var(--font-size-sm);
-    }
-  }
-}
-
-@media (max-width: var(--breakpoint-tablet)) {
   .local-preview {
     &__placeholder {
       svg {
@@ -150,14 +120,15 @@
       }
 
       p {
-        font-size: 0.95rem;
+        font-size: var(--font-size-base);
+        padding: 0 var(--spacing-md);
       }
     }
   }
 
   .share-link-display {
-    margin: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
+    margin: var(--spacing-md);
+    padding: var(--spacing-md);
 
     &__title {
       font-size: var(--font-size-xs);
@@ -178,39 +149,6 @@
       width: 100%;
       padding: 0.5rem;
       font-size: var(--font-size-sm);
-    }
-  }
-}
-
-@media (max-width: var(--breakpoint-mobile)) {
-  .local-preview {
-    &__placeholder {
-      svg {
-        width: 48px;
-        height: 48px;
-        margin-bottom: var(--spacing-sm);
-      }
-
-      p {
-        font-size: 0.875rem;
-        padding: 0 1rem;
-      }
-    }
-  }
-
-  .share-link-display {
-    &__title {
-      font-size: var(--font-size-xxs);
-    }
-
-    &__input {
-      font-size: var(--font-size-xxs);
-      padding: 0.45rem;
-    }
-
-    &__button {
-      padding: 0.45rem;
-      font-size: var(--font-size-xs);
     }
   }
 }

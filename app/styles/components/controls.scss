@@ -120,7 +120,7 @@
   }
 }
 
-@media (max-width: var(--breakpoint-desktop)) {
+@media (max-width: $breakpoint-desktop) {
   .controls-overlay {
     opacity: 1;
     background: var(--bg-primary);

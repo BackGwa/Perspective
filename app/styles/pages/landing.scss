@@ -1,3 +1,5 @@
+@import '../variables.scss';
+
 .landing-page {
     display: flex;
     width: 100%;
@@ -207,7 +209,7 @@
     }
 }
 
-@media (max-width: var(--breakpoint-desktop)) {
+@media (max-width: $breakpoint-desktop) {
     .landing-page {
         flex-direction: column;
         position: relative;
@@ -256,7 +258,7 @@
             right: 0;
             margin: 0 auto;
             width: 100%;
-            max-width: var(--breakpoint-mobile);
+            max-width: $breakpoint-mobile; // Keep this constraint for the centered menu
             padding: var(--spacing-md) var(--spacing-lg);
             padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
             height: auto;
@@ -269,8 +271,8 @@
 
         &__menu {
             width: 100%;
-            max-width: 500px;
-            gap: var(--font-size-sm);
+            max-width: 100%;
+            gap: var(--spacing-sm);
         }
     }
 
@@ -280,8 +282,8 @@
         border-radius: var(--border-radius-circle);
 
         .button-icon {
-            width: 22px;
-            height: 22px;
+            width: var(--icon-size-sm);
+            height: var(--icon-size-sm);
         }
     }
 
@@ -293,34 +295,8 @@
     .password-label {
         font-size: var(--font-size-sm);
     }
-}
-
-@media (max-width: var(--breakpoint-mobile)) {
-    .landing-page {
-        &__menu {
-            gap: var(--spacing-sm);
-            max-width: 100%;
-        }
-    }
-
-    .menu-button {
-        font-size: var(--font-size-base);
-
-        .button-icon {
-            width: var(--icon-size-sm);
-            height: var(--icon-size-sm);
-        }
-    }
-
-    .session-id-input {
-        font-size: var(--font-size-base);
-    }
 
     .error-message {
-        font-size: var(--font-size-sm);
-    }
-
-    .password-label {
         font-size: var(--font-size-sm);
     }
 }

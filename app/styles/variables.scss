@@ -1,3 +1,8 @@
+// Sass Breakpoints (Required for @media queries as CSS variables don't work there)
+$breakpoint-mobile: 480px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+
 :root {
   // Background colors
   --bg-primary: #090b0f;
@@ -68,9 +73,9 @@
   --z-toast: 2000;
 
   // Breakpoints
-  --breakpoint-mobile: 480px;
-  --breakpoint-tablet: 768px;
-  --breakpoint-desktop: 1024px;
+  --breakpoint-mobile: #{$breakpoint-mobile};
+  --breakpoint-tablet: #{$breakpoint-tablet};
+  --breakpoint-desktop: #{$breakpoint-desktop};
 
   // Font sizes
   --font-size-xxs: 0.65rem;
