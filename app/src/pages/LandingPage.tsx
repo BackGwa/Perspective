@@ -599,11 +599,11 @@ export function LandingPage() {
                             style={{ objectFit: 'cover' }}
                         />
                     ) : (
-                        <img src={heroImage} className="hero-bg" />
+                        <img src={heroImage} className="hero-bg" draggable="false" />
                     )}
                     {!(joinMode === 'qr' && menuState === 'join') && (
                         <div className="brand-title" ref={brandTitleRef}>
-                            <img src={brandTitleImage} alt="Perspective" />
+                            <img src={brandTitleImage} alt="Perspective" draggable="false" />
                         </div>
                     )}
                 </div>
@@ -683,14 +683,23 @@ export function LandingPage() {
                                                 placeholder="Enter Session ID"
                                                 value={sessionId}
                                                 onChange={(e) => setSessionId(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && !isConnecting && handleJoin()}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !isConnecting && (sessionId.trim().length === 36 || sessionId.includes('peer='))) {
+                                                        handleJoin();
+                                                    }
+                                                }}
                                                 onFocus={() => setIsInputFocused(true)}
                                                 onBlur={() => setIsInputFocused(false)}
                                                 disabled={isConnecting}
                                             />
                                         </div>
                                         {(isInputFocused || sessionId.trim()) && (
-                                            <button className="menu-button" onClick={handleJoin} disabled={isConnecting || !sessionId.trim()} key="join-confirm">
+                                            <button
+                                                className="menu-button"
+                                                onClick={handleJoin}
+                                                disabled={isConnecting || !(sessionId.trim().length === 36 || sessionId.includes('peer='))}
+                                                key="join-confirm"
+                                            >
                                                 <IconJoin className="button-icon" />
                                                 Join Session
                                             </button>

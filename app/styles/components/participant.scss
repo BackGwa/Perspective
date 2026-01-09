@@ -35,11 +35,11 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-lg);
-    background: radial-gradient(circle at center, rgba(183, 186, 195, 0.05) 0%, transparent 70%);
+    background: radial-gradient(circle at center, rgba(var(--rgb-text-secondary), 0.05) 0%, transparent 70%);
 
     &-text {
-      font-size: 1.125rem;
-      font-weight: 400;
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-normal);
       color: var(--text-secondary);
       font-family: var(--font-family);
     }
@@ -50,19 +50,19 @@
   position: absolute;
   top: var(--spacing-md);
   right: var(--spacing-md);
-  padding: 0.6rem 1.25rem;
-  background-color: rgba(9, 11, 15, 0.6);
-  border: 1px solid rgba(183, 186, 195, 0.1);
-  backdrop-filter: blur(12px);
-  border-radius: 12px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: rgba(var(--rgb-bg-primary), 0.6);
+  border: 1px solid rgba(var(--rgb-text-secondary), 0.1);
+  backdrop-filter: blur(var(--blur-lg));
+  border-radius: var(--border-radius-lg);
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: 0.85rem;
-  font-weight: 400;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
   color: var(--text-secondary);
   z-index: var(--z-overlay);
-  box-shadow: var(--shadow-lg);
+
 
   &__indicator {
     width: 8px;
@@ -93,7 +93,7 @@
 
   &__text {
     color: var(--text-primary);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
   }
 }
 
@@ -122,7 +122,7 @@
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: var(--breakpoint-desktop)) {
   .participant-page {
     touch-action: manipulation;
   }
@@ -132,7 +132,7 @@
       gap: var(--spacing-md);
 
       &-text {
-        font-size: 1rem;
+        font-size: var(--font-size-base);
       }
     }
   }
@@ -140,8 +140,8 @@
   .connection-status {
     top: var(--spacing-sm);
     right: var(--spacing-sm);
-    padding: 0.5rem 1rem;
-    font-size: 0.75rem;
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-xs);
 
     &__indicator {
       width: 6px;
@@ -150,25 +150,25 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: var(--breakpoint-tablet)) {
   .remote-stream {
     &__loading {
       gap: var(--spacing-sm);
 
       &-text {
-        font-size: 0.95rem;
+        font-size: var(--font-size-sm);
       }
     }
   }
 
   .connection-status {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.7rem;
-    border-radius: 8px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    border-radius: var(--border-radius-md);
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: var(--breakpoint-mobile)) {
   .remote-stream {
     &__loading {
       &-text {
@@ -180,9 +180,9 @@
   }
 
   .connection-status {
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.35rem 0.7rem;
-    font-size: 0.65rem;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xxs);
   }
 }
