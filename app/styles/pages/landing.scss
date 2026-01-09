@@ -9,6 +9,7 @@
     font-family: var(--font-family);
     justify-content: center;
     user-select: none;
+    position: relative;
 
     img {
         -webkit-user-drag: none;
@@ -89,6 +90,16 @@
         gap: var(--spacing-md);
         width: 100%;
         max-width: var(--menu-max-width);
+    }
+
+    &__version {
+        font-size: var(--font-size-xxs);
+        color: var(--text-muted);
+        opacity: 0.75;
+        font-family: var(--font-family);
+        pointer-events: none;
+        z-index: 10;
+        text-align: center;
     }
 }
 

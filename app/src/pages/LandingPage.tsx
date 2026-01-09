@@ -806,6 +806,9 @@ export function LandingPage() {
                             </div>
                         )}
 
+                        <div className="landing-page__version">
+                            {__COMMIT_HASH__} @ {__APP_VERSION__}
+                        </div>
                     </div>
                 </div>
             </div>
