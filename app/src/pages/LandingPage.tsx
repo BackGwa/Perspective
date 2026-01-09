@@ -264,16 +264,16 @@ export function LandingPage() {
                                 setTempPeerForVerification(null);
                             }
                         });
-                    });
 
-                    tempPeer.on('error', (err) => {
-                        console.error('[LandingPage] Peer error:', err);
-                        setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-                        setIsConnecting(false);
-                        if (tempPeer) {
-                            tempPeer.destroy();
-                            setTempPeerForVerification(null);
-                        }
+                        tempPeer.on('error', (err) => {
+                            console.error('[LandingPage] Peer error:', err);
+                            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
+                            setIsConnecting(false);
+                            if (tempPeer) {
+                                tempPeer.destroy();
+                                setTempPeerForVerification(null);
+                            }
+                        });
                     });
                 } catch (err) {
                     console.error(err);
@@ -571,7 +571,7 @@ export function LandingPage() {
 
             tempPeer.on('error', (err) => {
                 console.error('[LandingPage] Peer error during join:', err);
-                setError("Unable to connect. Invalid ID or Host is offline.");
+                setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
                 setIsConnecting(false);
                 if (tempPeer) {
                     tempPeer.destroy();

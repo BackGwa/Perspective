@@ -120,8 +120,9 @@ export const ERROR_MESSAGES = {
   COULD_NOT_CONNECT_TO_HOST: 'Could not connect to host',
   CONNECTION_CLOSED_IMMEDIATELY: 'Connection closed immediately',
   CAMERA_SWITCHING_ONLY_AVAILABLE: 'Camera switching is only available in camera mode',
-  PASSWORD_TOO_SHORT: 'Password must be at least 4 characters.',
-  PASSWORD_TOO_LONG: 'Password cannot exceed 32 characters.'
+  PASSWORD_TOO_SHORT: 'Password must be at least4 characters.',
+  PASSWORD_TOO_LONG: 'Password cannot exceed 32 characters.',
+  SESSION_ENDED: 'Session ended by host.'
 } as const;
 
 const getMaxPasswordRetries = (): number => {

@@ -56,7 +56,7 @@ export function ParticipantPage() {
       navigate('/', { state: { error: ERROR_MESSAGES.PEER_CONNECTION_FAILED } });
     } else if (connectionStatus === 'closed' || connectionStatus === 'disconnected') {
       // Immediate redirect to home with error message
-      navigate('/', { state: { error: 'Session ended by host.' } });
+      navigate('/', { state: { error: ERROR_MESSAGES.SESSION_ENDED } });
     }
   }, [connectionStatus, participantPeer, navigate]);
 
@@ -75,7 +75,9 @@ export function ParticipantPage() {
     }
     setRemoteStream(null);
     setConnectionStatus('idle');
-    navigate('/');
+    
+    // Navigate to home with completely new URL (removes query params)
+    window.location.href = '/';
   };
 
   // Clean up on unmount
