@@ -35,10 +35,6 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
         />
       </div>
 
-      <div className="qr-share-panel__link">
-        {shareLink}
-      </div>
-
       <button
         className={`qr-share-panel__copy-button ${copied ? 'qr-share-panel__copy-button--copied' : ''}`}
         onClick={handleCopy}
