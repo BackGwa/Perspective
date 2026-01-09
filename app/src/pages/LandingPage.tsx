@@ -25,6 +25,7 @@ import { PasswordInput } from '../components/shared/PasswordInput';
 import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
 import { ERROR_MESSAGES } from '../config/constants';
+import { hashPassword } from '../utils/passwordHasher';
 
 export function LandingPage() {
     const navigate = useNavigate();
@@ -311,8 +312,9 @@ export function LandingPage() {
 
             // Save password to context (empty string = public room)
             const trimmedPassword = hostPassword.trim();
-            setSessionPassword(trimmedPassword || null);
-            console.log('[LandingPage] Password set:', trimmedPassword ? 'Protected' : 'Public');
+            const hashedPassword = trimmedPassword ? await hashPassword(trimmedPassword) : null;
+            setSessionPassword(hashedPassword);
+            console.log('[LandingPage] Password set:', hashedPassword ? 'Protected' : 'Public');
 
             const stream = await startCapture(source);
             console.log('[LandingPage] Capture successful, stream:', stream);
