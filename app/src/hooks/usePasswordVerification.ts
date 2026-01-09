@@ -95,7 +95,7 @@ export function usePasswordVerification({
 
     if (!dataConnection.open) {
       console.error('[PasswordVerification] Data connection not open');
-      setErrorMessage('Connection lost. Please try again.');
+      setErrorMessage(ERROR_MESSAGES.CONNECTION_LOST);
       return;
     }
 

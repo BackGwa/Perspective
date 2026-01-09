@@ -103,7 +103,23 @@ export const ERROR_MESSAGES = {
   PASSWORD_INCORRECT: 'Incorrect password. Please try again.',
   PASSWORD_MAX_RETRIES: 'Maximum password attempts exceeded. Please request a new link from the host.',
   PASSWORD_REQUIRED: 'This session requires a password.',
-  MAX_PARTICIPANTS_EXCEEDED: 'Session is at maximum capacity. Please try again later.'
+  MAX_PARTICIPANTS_EXCEEDED: 'Session is at maximum capacity. Please try again later.',
+  CONNECTION_ERROR: 'Connection error. Please try again.',
+  UNABLE_TO_CONNECT: 'Unable to connect. Invalid ID or Host is offline.',
+  PERMISSION_DENIED_GENERIC: 'Permission denied. Please allow access to continue.',
+  FAILED_TO_START_SHARING: 'Failed to start sharing.',
+  FAILED_TO_ACCESS_CAMERA: 'Failed to access camera. Please check permissions.',
+  PLEASE_ENTER_VALID_SESSION_ID: 'Please enter a valid Session ID.',
+  PLEASE_ENTER_PASSWORD: 'Please enter a password',
+  CONNECTION_LOST: 'Connection lost. Please try again.',
+  NO_CAMERA_OR_MICROPHONE: 'No camera or microphone found on this device.',
+  DEVICE_ALREADY_IN_USE: 'Device is already in use by another application.',
+  CAMERA_CONSTRAINTS_NOT_SUPPORTED: 'Camera does not support the requested constraints.',
+  PEER_NOT_INITIALIZED: 'Peer not initialized',
+  CONNECTION_TIMED_OUT: 'Connection timed out',
+  COULD_NOT_CONNECT_TO_HOST: 'Could not connect to host',
+  CONNECTION_CLOSED_IMMEDIATELY: 'Connection closed immediately',
+  CAMERA_SWITCHING_ONLY_AVAILABLE: 'Camera switching is only available in camera mode'
 } as const;
 
 const getMaxPasswordRetries = (): number => {
