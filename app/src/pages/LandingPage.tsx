@@ -453,24 +453,30 @@ export function LandingPage() {
     const handleQRCodeScanned = useCallback(async (result: QRScanResult) => {
         console.log('[LandingPage] Valid QR code scanned:', result);
 
+        if (!result.peerId) {
+            console.error('[LandingPage] QR scan missing peer ID');
+            return;
+        }
+
         try {
-            // Stop camera immediately
+            // 1. Set values immediately to prevent empty states in join menu
+            setSessionId(result.peerId);
+
+            // 2. Stop camera
             stopQRCamera();
 
-            // Switch to input mode (like clicking "Enter Manually")
+            // 3. Switch menu state (this triggers the UI transition)
             setJoinMode('input');
 
-            // Show connecting state
+            // 4. Show connecting state
             setError(null);
             setIsConnecting(true);
 
-            // Process QR scan (validates peer connection)
+            // 5. Process QR scan (validates peer connection)
+            // Note: validateConnection is already called inside processQRScan
             const peerId = await qrScannerService.processQRScan(result);
 
-            // Auto-fill input field
-            setSessionId(peerId);
-
-            // Auto-trigger connection (same as handleJoin)
+            // 6. Navigate to share page
             navigate(`/share?peer=${peerId}`);
         } catch (err) {
             console.error('[LandingPage] QR scan processing error:', err);
