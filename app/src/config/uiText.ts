@@ -62,3 +62,7 @@ export const QR_VALIDATION_ERRORS = {
 export const PASSWORD_VERIFICATION = {
   ATTEMPTS_REMAINING: 'attempt|attempts remaining',
 } as const;
+
+export const CLIENT_COUNT = {
+  CONNECTED: 'Connected',
+} as const;

@@ -1,0 +1,53 @@
+@import '../../../styles/variables.scss';
+
+.client-count-badge {
+  // Positioning - above the parent container
+  position: absolute;
+  bottom: calc(100% + var(--spacing-md));
+  left: 50%;
+  transform: translateX(-50%);
+
+  // Layout
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+
+  // Background with glassmorphism
+  background: color-mix(in srgb, var(--bg-primary), transparent 10%);
+  backdrop-filter: blur(var(--blur-md));
+
+  // Border and shape
+  border: 1px solid rgba(var(--rgb-text-secondary), 0.1);
+  border-radius: var(--border-radius-circle);
+
+  // Typography
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+
+  // Layering
+  z-index: var(--z-overlay);
+
+  // Ensure pointer events don't interfere
+  pointer-events: none;
+
+  &__count {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  &__label {
+    color: var(--text-secondary);
+    font-weight: var(--font-weight-normal);
+  }
+}
+
+// Mobile/Tablet responsive adjustments
+@media (max-width: $breakpoint-desktop) {
+  .client-count-badge {
+    // Reset position to prevent height changes on mobile
+    bottom: calc(100% + var(--spacing-sm));
+    padding: var(--spacing-xxs) var(--spacing-sm);
+    font-size: var(--font-size-xxs);
+  }
+}

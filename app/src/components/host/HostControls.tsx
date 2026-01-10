@@ -9,6 +9,7 @@ import {
   IconCameraSwitch
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
+import { ClientCountBadge } from './ClientCountBadge';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { HOST_CONTROLS } from '../../config/uiText';
 import '../../../styles/components/controls.scss';
@@ -20,6 +21,7 @@ interface HostControlsProps {
   shareLink: string;
   sourceType: MediaSourceType | null;
   canSwitchCamera: boolean;
+  participantCount: number;
   onToggleVideo: () => void;
   onToggleAudio: () => void;
   onSwitchCamera: () => void;
@@ -32,6 +34,7 @@ export function HostControls({
   shareLink,
   sourceType,
   canSwitchCamera,
+  participantCount,
   onToggleVideo,
   onToggleAudio,
   onSwitchCamera,
@@ -51,6 +54,8 @@ export function HostControls({
   return (
     <div className={`controls-overlay ${showQRPanel ? 'controls-overlay--visible' : ''}`}>
       <div ref={containerRef} style={{ position: 'relative', display: 'flex', gap: 'var(--spacing-md)', alignItems: 'center' }}>
+        <ClientCountBadge participantCount={participantCount} />
+
         {showQRPanel && (
           <QRSharePanel
             shareLink={shareLink}

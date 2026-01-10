@@ -25,6 +25,7 @@
 
 
 .control-button {
+  position: relative;
   width: var(--control-size-md);
   height: var(--control-size-md);
   border-radius: var(--border-radius-circle);
@@ -41,6 +42,7 @@
     &:hover:not(:disabled) {
       background-color: var(--interactive-normal);
       color: var(--bg-primary);
+      z-index: calc(var(--z-overlay) + 200);
     }
   }
 
@@ -98,16 +100,18 @@
   transform: translateX(-50%);
   margin-bottom: var(--spacing-sm);
   padding: 0.4rem 0.8rem;
-  background-color: var(--bg-secondary);
-  border: 1px solid rgba(var(--rgb-text-secondary), 0.1);
+  background: color-mix(in srgb, var(--bg-primary), transparent 5%);
+  backdrop-filter: blur(var(--blur-backdrop-qr));
+  border: 1px solid color-mix(in srgb, var(--text-secondary), transparent 90%);
   color: var(--text-primary);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-circle);
   font-size: var(--font-size-xs);
   font-family: var(--font-family);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: all var(--transition-base);
+  z-index: calc(var(--z-overlay) + 100);
 }
 
 @media (hover: hover) {

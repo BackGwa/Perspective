@@ -43,7 +43,7 @@ export function HostPage() {
     console.log('[HostPage] Render - location.state:', location.state);
   });
 
-  const { disconnect, getShareLink } = usePeerConnection({
+  const { disconnect, getShareLink, participantCount } = usePeerConnection({
     role: 'host',
     stream
   });
@@ -163,6 +163,7 @@ export function HostPage() {
         shareLink={getShareLink() || ''}
         sourceType={sourceType}
         canSwitchCamera={canSwitchCamera}
+        participantCount={participantCount}
         onToggleVideo={handleToggleVideo}
         onToggleAudio={handleToggleAudio}
         onSwitchCamera={handleSwitchCamera}
