@@ -26,3 +26,23 @@ Here are some examples of properly named branches
 |New feature|`features/peer-connection`|
 |Refactoring|`refactor/state-management`|
 |Hotfix|`hotfix/session-hijacking`|
+
+## PR Title Guidelines
+- Focus on the main functionality being modified
+- Briefly mention other modified features
+- Do not use parentheses
+- Include issue number only for significant changes like bug fixes or new feature proposals
+
+Examples
+- Add session password protection and refine overall style and code
+- Remove auto-approval for reconnecting peers
+- Fix login timeout and optimize loading performance (#123)
+
+## PR Description Guidelines
+- Describe the impact of the changes
+- Explain the reasoning behind the modifications
+- Mention issue numbers for bug/issue fixes
+- Provide clear context without unnecessary fluff
+
+Example
+> Eliminated logic that automatically approves peers who reconnect if they were previously approved. This change ensures all participants go through the password protection flow, even on reconnection. Closes #45.
