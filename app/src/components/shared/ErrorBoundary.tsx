@@ -1,4 +1,5 @@
 import { Component, ReactNode } from 'react';
+import { ERROR_BOUNDARY } from '../../config/uiText';
 
 interface Props {
   children: ReactNode;
@@ -38,26 +39,26 @@ export class ErrorBoundary extends Component<Props, State> {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#090b0f',
-          color: '#b7bac3'
+          background: 'var(--bg-primary)',
+          color: 'var(--text-secondary)'
         }}>
-          <h2>Something went wrong</h2>
+          <h2>{ERROR_BOUNDARY.SOMETHING_WENT_WRONG}</h2>
           <p style={{ margin: '1rem 0' }}>
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {this.state.error?.message || ERROR_BOUNDARY.UNEXPECTED_ERROR}
           </p>
           <button
             onClick={() => window.location.reload()}
             style={{
               padding: '0.6rem 1.25rem',
-              background: '#b7bac3',
+              background: 'var(--interactive-normal)',
               border: 'none',
-              borderRadius: '6px',
-              color: '#090b0f',
-              fontSize: '1rem',
+              borderRadius: 'var(--border-radius-sm)',
+              color: 'var(--bg-primary)',
+              fontSize: 'var(--font-size-base)',
               cursor: 'pointer'
             }}
           >
-            Reload Page
+            {ERROR_BOUNDARY.RELOAD_PAGE}
           </button>
         </div>
       );

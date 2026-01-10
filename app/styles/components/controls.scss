@@ -6,10 +6,8 @@
   left: 0;
   right: 0;
   background: linear-gradient(to top, rgba(var(--rgb-black), 0.9) 0%, rgba(var(--rgb-black), 0) 100%);
-  height: 180px;
-  /* Explicit height for hit area */
+  height: var(--spacing-controls-overlay-height);
   padding: 0 0 var(--spacing-xl);
-  /* Padding from bottom */
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -18,7 +16,6 @@
   opacity: 0;
   transition: opacity var(--transition-base);
   pointer-events: auto;
-  /* Enable hover detection on the area */
 
   &:hover,
   &--visible {
@@ -91,7 +88,6 @@
     fill: currentColor;
     stroke: currentColor;
     stroke-width: 0.5;
-    /* Subtle stroke for extra clarity */
   }
 }
 
@@ -129,12 +125,12 @@
     height: auto;
     gap: var(--spacing-sm);
     border-top: 1px solid rgba(var(--rgb-white), 0.1);
-    padding: var(--spacing-md) 0;
+    padding: var(--spacing-md) 0 calc(var(--spacing-md) + env(safe-area-inset-bottom));
   }
 
   .control-button {
-    width: 56px;
-    height: 56px;
+    width: var(--size-button-mobile);
+    height: var(--size-button-mobile);
 
     svg {
       width: var(--icon-size-md);

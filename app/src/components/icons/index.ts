@@ -1,14 +1,14 @@
 export { IconShare } from './IconShare';
 export { IconShareMD } from './IconShareMD';
 export { IconJoin } from './IconJoin';
-export { IconExplore } from './IconExplore';
 export { IconCamera } from './IconCamera';
 export { IconScreen } from './IconScreen';
 export { IconQr } from './IconQr';
-export { IconKeyboard } from './IconKeyboard';
 export { IconBack } from './IconBack';
 export { IconMicOn } from './IconMicOn';
 export { IconMicOff } from './IconMicOff';
+export { IconSpeakerOn } from './IconSpeakerOn';
+export { IconSpeakerOff } from './IconSpeakerOff';
 export { IconMonitorOn } from './IconMonitorOn';
 export { IconMonitorOff } from './IconMonitorOff';
 export { IconExit } from './IconExit';

@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
-    IconMicOn,
-    IconMicOff,
+    IconSpeakerOn,
+    IconSpeakerOff,
     IconShareMD as IconShare,
     IconExit
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
+import { useClickOutside } from '../../hooks/useClickOutside';
+import { PARTICIPANT_CONTROLS } from '../../config/uiText';
 import '../../../styles/components/controls.scss';
 
 interface ParticipantControlsProps {
@@ -24,16 +26,7 @@ export function ParticipantControls({
     const [showQRPanel, setShowQRPanel] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setShowQRPanel(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    useClickOutside(containerRef, () => setShowQRPanel(false));
 
     const handleShare = () => {
         setShowQRPanel(prev => !prev);
@@ -50,28 +43,28 @@ export function ParticipantControls({
                 <button
                     className={`control-button ${isMuted ? 'control-button--danger' : ''}`}
                     onClick={onToggleAudio}
-                    title={isMuted ? 'Unmute' : 'Mute'}
+                    title={isMuted ? PARTICIPANT_CONTROLS.UNMUTE : PARTICIPANT_CONTROLS.MUTE}
                 >
-                    {isMuted ? <IconMicOff /> : <IconMicOn />}
-                    <span className="control-tooltip">{isMuted ? 'Unmute' : 'Mute'}</span>
+                    {isMuted ? <IconSpeakerOff /> : <IconSpeakerOn />}
+                    <span className="control-tooltip">{isMuted ? PARTICIPANT_CONTROLS.UNMUTE : PARTICIPANT_CONTROLS.MUTE}</span>
                 </button>
 
                 <button
                     className="control-button"
                     onClick={handleShare}
-                    title="Share Link"
+                    title={PARTICIPANT_CONTROLS.SHARE_LINK}
                 >
                     <IconShare />
-                    <span className="control-tooltip">Share Link</span>
+                    <span className="control-tooltip">{PARTICIPANT_CONTROLS.SHARE_LINK}</span>
                 </button>
 
                 <button
                     className="control-button control-button--danger"
                     onClick={onLeave}
-                    title="Leave Session"
+                    title={PARTICIPANT_CONTROLS.LEAVE_SESSION}
                 >
                     <IconExit />
-                    <span className="control-tooltip">Leave Session</span>
+                    <span className="control-tooltip">{PARTICIPANT_CONTROLS.LEAVE_SESSION}</span>
                 </button>
             </div>
         </div>

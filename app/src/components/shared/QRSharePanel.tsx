@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { QR_SHARE } from '../../config/uiText';
+import { TIMING } from '../../config/timing';
+import { QR_CODE_DESIGN } from '../../config/design';
 import './QRSharePanel.scss';
 
 interface QRSharePanelProps {
@@ -13,7 +16,7 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
     try {
       await navigator.clipboard.writeText(shareLink);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), TIMING.COPY_FEEDBACK_DURATION);
     } catch (err) {
       console.error('Failed to copy link:', err);
     }
@@ -26,12 +29,12 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
       <div className="qr-share-panel__qr-container">
         <QRCodeSVG
           value={shareLink}
-          size={undefined} // Let CSS control size
+          size={undefined}
           style={{ width: '100%', height: '100%' }}
-          level="M"
+          level={QR_CODE_DESIGN.ERROR_CORRECTION_LEVEL}
           includeMargin={false}
-          bgColor="#ffffff"
-          fgColor="#000000"
+          bgColor={QR_CODE_DESIGN.BG_COLOR}
+          fgColor={QR_CODE_DESIGN.FG_COLOR}
         />
       </div>
 
@@ -39,7 +42,7 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
         className={`qr-share-panel__copy-button ${copied ? 'qr-share-panel__copy-button--copied' : ''}`}
         onClick={handleCopy}
       >
-        {copied ? 'Copied!' : 'Copy Link'}
+        {copied ? QR_SHARE.COPIED : QR_SHARE.COPY_LINK}
       </button>
     </div>
   );

@@ -125,4 +125,28 @@ $breakpoint-desktop: 1024px;
   --rgb-accent-success: 59, 165, 93;
   --rgb-white: 255, 255, 255;
   --rgb-black: 0, 0, 0;
+
+  // Additional spacing (Phase 2 refactoring)
+  --spacing-panel-gap: 24px;
+  --spacing-controls-overlay-height: 180px;
+
+  // Additional blur values
+  --blur-backdrop-qr: 12px;
+
+  // Additional border radius
+  --border-radius-qr-panel: 16px;
+
+  // Component-specific sizes
+  --size-qr-panel-min: 280px;
+  --size-button-mobile: 56px;
+
+  // Additional font sizes
+  --font-size-copy-button: 0.9rem;
+
+  // Additional animation durations
+  --duration-slide: 0.3s;
+
+  // Brand title sizes (for landing page)
+  --size-brand-title-desktop: 17.5rem;
+  --size-brand-title-mobile: 12.5rem;
 }

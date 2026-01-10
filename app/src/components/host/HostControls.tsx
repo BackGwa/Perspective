@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   IconMicOn,
   IconMicOff,
@@ -9,6 +9,8 @@ import {
   IconCameraSwitch
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
+import { useClickOutside } from '../../hooks/useClickOutside';
+import { HOST_CONTROLS } from '../../config/uiText';
 import '../../../styles/components/controls.scss';
 import type { MediaSourceType } from '../../types/media.types';
 
@@ -38,16 +40,7 @@ export function HostControls({
   const [showQRPanel, setShowQRPanel] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowQRPanel(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(containerRef, () => setShowQRPanel(false));
 
   const handleShare = () => {
     setShowQRPanel(prev => !prev);
@@ -70,47 +63,47 @@ export function HostControls({
             className={`control-button ${!canSwitchCamera ? 'control-button--disabled' : ''}`}
             onClick={onSwitchCamera}
             disabled={!canSwitchCamera}
-            title={canSwitchCamera ? 'Switch Camera' : 'Camera switch unavailable'}
+            title={canSwitchCamera ? HOST_CONTROLS.SWITCH_CAMERA : HOST_CONTROLS.CAMERA_SWITCH_UNAVAILABLE}
           >
             <IconCameraSwitch />
-            <span className="control-tooltip">{canSwitchCamera ? 'Switch Camera' : 'No other camera'}</span>
+            <span className="control-tooltip">{canSwitchCamera ? HOST_CONTROLS.SWITCH_CAMERA : HOST_CONTROLS.NO_OTHER_CAMERA}</span>
           </button>
         )}
 
         <button
           className={`control-button ${isPaused ? 'control-button--danger' : ''}`}
           onClick={onToggleVideo}
-          title={isPaused ? 'Resume Video' : 'Pause Video'}
+          title={isPaused ? HOST_CONTROLS.RESUME_VIDEO : HOST_CONTROLS.PAUSE_VIDEO}
         >
           {isPaused ? <IconMonitorOff /> : <IconMonitorOn />}
-          <span className="control-tooltip">{isPaused ? 'Resume Video' : 'Pause Video'}</span>
+          <span className="control-tooltip">{isPaused ? HOST_CONTROLS.RESUME_VIDEO : HOST_CONTROLS.PAUSE_VIDEO}</span>
         </button>
 
         <button
           className={`control-button ${isMuted ? 'control-button--danger' : ''}`}
           onClick={onToggleAudio}
-          title={isMuted ? 'Unmute' : 'Mute'}
+          title={isMuted ? HOST_CONTROLS.UNMUTE : HOST_CONTROLS.MUTE}
         >
           {isMuted ? <IconMicOff /> : <IconMicOn />}
-          <span className="control-tooltip">{isMuted ? 'Unmute' : 'Mute'}</span>
+          <span className="control-tooltip">{isMuted ? HOST_CONTROLS.UNMUTE : HOST_CONTROLS.MUTE}</span>
         </button>
 
         <button
           className="control-button"
           onClick={handleShare}
-          title="Share Link"
+          title={HOST_CONTROLS.SHARE_LINK}
         >
           <IconShare />
-          <span className="control-tooltip">Share Link</span>
+          <span className="control-tooltip">{HOST_CONTROLS.SHARE_LINK}</span>
         </button>
 
         <button
           className="control-button control-button--danger"
           onClick={onStop}
-          title="Stop Sharing"
+          title={HOST_CONTROLS.STOP_SHARING}
         >
           <IconStop />
-          <span className="control-tooltip">Stop Sharing</span>
+          <span className="control-tooltip">{HOST_CONTROLS.STOP_SHARING}</span>
         </button>
       </div>
     </div>
