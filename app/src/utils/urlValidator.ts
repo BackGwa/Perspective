@@ -1,23 +1,11 @@
 import type { URLValidationResult, QRValidationError } from '../types/qr.types';
+import { QR_VALIDATION_ERRORS } from '../config/uiText';
 
-/**
- * Validates QR code URL format and extracts peer ID
- *
- * Expected format: https://domain.com/#/share?peer=SESSION_ID
- *
- * Validation rules:
- * 1. Must use hash routing (#/)
- * 2. Must match current domain exactly (including subdomain)
- * 3. Must have /share path
- * 4. Must have peer parameter with non-empty value
- */
 export function validateQRCodeURL(scannedURL: string): URLValidationResult {
   try {
-    // Parse scanned URL
     const scannedUrl = new URL(scannedURL);
     const currentUrl = new URL(window.location.href);
 
-    // 1. Validate domain match (including subdomain and port)
     const scannedOrigin = scannedUrl.origin;
     const currentOrigin = currentUrl.origin;
 
@@ -28,8 +16,7 @@ export function validateQRCodeURL(scannedURL: string): URLValidationResult {
       };
     }
 
-    // 2. Validate hash routing format
-    const hashPart = scannedUrl.hash; // e.g., "#/share?peer=abc123"
+    const hashPart = scannedUrl.hash;
 
     if (!hashPart.startsWith('#/share')) {
       return {
@@ -38,7 +25,6 @@ export function validateQRCodeURL(scannedURL: string): URLValidationResult {
       };
     }
 
-    // 3. Extract peer parameter from hash
     const hashParams = new URLSearchParams(hashPart.split('?')[1]);
     const peerId = hashParams.get('peer');
 
@@ -62,20 +48,17 @@ export function validateQRCodeURL(scannedURL: string): URLValidationResult {
   }
 }
 
-/**
- * Get user-friendly error message for validation errors
- */
 export function getQRErrorMessage(error: QRValidationError): string {
   switch (error) {
     case 'DOMAIN_MISMATCH':
-      return 'QR code is for a different Perspective instance.';
+      return QR_VALIDATION_ERRORS.DOMAIN_MISMATCH;
     case 'INVALID_FORMAT':
-      return 'Invalid QR code format. Please scan a valid share link.';
+      return QR_VALIDATION_ERRORS.INVALID_FORMAT;
     case 'MISSING_PEER_ID':
-      return 'QR code is missing session information.';
+      return QR_VALIDATION_ERRORS.MISSING_PEER_ID;
     case 'MALFORMED_URL':
-      return 'Unable to read QR code. Please try again.';
+      return QR_VALIDATION_ERRORS.MALFORMED_URL;
     default:
-      return 'Invalid QR code.';
+      return QR_VALIDATION_ERRORS.DEFAULT;
   }
 }

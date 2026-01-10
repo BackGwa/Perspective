@@ -2,14 +2,7 @@ import jsQR from 'jsqr';
 import type { QRScanResult } from '../types/qr.types';
 import { validateQRCodeURL, getQRErrorMessage } from './urlValidator';
 
-/**
- * Scans a video frame for QR codes
- *
- * @param video - HTMLVideoElement with active stream
- * @returns QRScanResult or null if no QR code found
- */
 export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
-  // Create canvas to capture video frame
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
 
@@ -17,26 +10,21 @@ export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
     return null;
   }
 
-  // Use video dimensions
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
-  // Draw current video frame to canvas
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // Get image data
   const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
 
-  // Scan for QR code
   const code = jsQR(imageData.data, imageData.width, imageData.height, {
-    inversionAttempts: 'dontInvert', // Optimize for performance
+    inversionAttempts: 'dontInvert',
   });
 
   if (!code) {
-    return null; // No QR code found
+    return null;
   }
 
-  // Validate the scanned data
   const validation = validateQRCodeURL(code.data);
 
   if (!validation.isValid) {
@@ -54,15 +42,6 @@ export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
   };
 }
 
-/**
- * Starts a continuous scanning loop on video element
- *
- * @param video - HTMLVideoElement to scan
- * @param onScan - Callback when valid QR code is found
- * @param onError - Callback when invalid QR code is scanned
- * @param interval - Milliseconds between scans (default: 100ms = 10 scans/sec)
- * @returns Cleanup function to stop scanning
- */
 export function startContinuousScanning(
   video: HTMLVideoElement,
   onScan: (result: QRScanResult) => void,
@@ -80,12 +59,10 @@ export function startContinuousScanning(
 
       if (result) {
         if (result.valid) {
-          // Valid QR code found - trigger callback
-          isScanning = false; // Stop scanning
+          isScanning = false;
           clearInterval(intervalId);
           onScan(result);
         } else {
-          // Invalid QR code - show error
           const errorMsg = getQRErrorMessage(result.error!);
           onError(errorMsg);
         }
@@ -96,10 +73,8 @@ export function startContinuousScanning(
     }
   };
 
-  // Start scanning loop
   intervalId = window.setInterval(scan, interval);
 
-  // Return cleanup function
   return () => {
     isScanning = false;
     clearInterval(intervalId);

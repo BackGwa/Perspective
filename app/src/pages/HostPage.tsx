@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LocalPreview } from '../components/host/LocalPreview';
-
 import { HostControls } from '../components/host/HostControls';
 import { useMediaStream } from '../hooks/useMediaStream';
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
+import { navigateWithError } from '../utils/navigationHelpers';
+import { TIMING } from '../config/timing';
 import '../../styles/components/host.scss';
 
 export function HostPage() {
@@ -70,9 +71,9 @@ export function HostPage() {
           if (!stream && !hasNavigatedRef.current) {
             console.error('[HostPage] Stream timeout - redirecting to landing');
             hasNavigatedRef.current = true;
-            navigate('/', { state: { error: 'Failed to initialize stream' } });
+            navigateWithError(navigate, 'Failed to initialize stream');
           }
-        }, 3000); // Wait 3 seconds for stream to be available
+        }, TIMING.STREAM_WAIT_TIMEOUT);
 
         return () => {
           console.log('[HostPage] Cleaning up stream wait timeout');
@@ -133,8 +134,7 @@ export function HostPage() {
 
   useEffect(() => {
     if (error) {
-      // Redirect to landing page with error message
-      navigate('/', { state: { error: error.message } });
+      navigateWithError(navigate, error.message);
     }
   }, [error, navigate]);
 

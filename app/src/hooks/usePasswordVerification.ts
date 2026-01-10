@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DataConnection } from 'peerjs';
 import { ERROR_MESSAGES, PASSWORD_CONFIG } from '../config/constants';
+import { PASSWORD_VERIFICATION } from '../config/uiText';
 import type { PasswordMessage } from '../types/password.types';
 import { hashPassword } from '../utils/passwordHasher';
 import { isValidPasswordMessage } from '../types/password.types';
@@ -68,7 +69,8 @@ export function usePasswordVerification({
             onMaxRetriesExceeded?.();
           } else {
             // Still has retries
-            setErrorMessage(`${reason} (${remainingRetries} ${remainingRetries === 1 ? 'attempt' : 'attempts'} remaining)`);
+            const [singular, plural] = PASSWORD_VERIFICATION.ATTEMPTS_REMAINING.split('|');
+            setErrorMessage(`${reason} (${remainingRetries} ${remainingRetries === 1 ? singular : plural} remaining)`);
             onRejected?.(reason);
           }
           break;

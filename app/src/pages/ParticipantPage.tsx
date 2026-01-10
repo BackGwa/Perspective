@@ -5,6 +5,8 @@ import { ParticipantControls } from '../components/participant/ParticipantContro
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { useStreamContext } from '../contexts/StreamContext';
 import { ERROR_MESSAGES } from '../config/constants';
+import { cleanupParticipantPeer } from '../utils/peerCleanup';
+import { navigateWithError } from '../utils/navigationHelpers';
 import '../../styles/components/participant.scss';
 
 export function ParticipantPage() {
@@ -18,7 +20,7 @@ export function ParticipantPage() {
   // Check if accessed directly via link (no existing peer from password verification)
   useEffect(() => {
     if (!hostPeerId) {
-      navigate('/', { state: { error: ERROR_MESSAGES.INVALID_PEER_ID } });
+      navigateWithError(navigate, ERROR_MESSAGES.INVALID_PEER_ID);
       return;
     }
 
@@ -53,10 +55,9 @@ export function ParticipantPage() {
     }
 
     if (connectionStatus === 'failed') {
-      navigate('/', { state: { error: ERROR_MESSAGES.PEER_CONNECTION_FAILED } });
+      navigateWithError(navigate, ERROR_MESSAGES.PEER_CONNECTION_FAILED);
     } else if (connectionStatus === 'closed' || connectionStatus === 'disconnected') {
-      // Immediate redirect to home with error message
-      navigate('/', { state: { error: ERROR_MESSAGES.SESSION_ENDED } });
+      navigateWithError(navigate, ERROR_MESSAGES.SESSION_ENDED);
     }
   }, [connectionStatus, participantPeer, navigate]);
 
@@ -66,17 +67,9 @@ export function ParticipantPage() {
 
 
   const handleLeave = () => {
-    // Clean up participant peer and reset state when leaving
-    if (participantPeer) {
-      // Remove all event listeners before destroying to prevent status changes
-      participantPeer.removeAllListeners();
-      participantPeer.destroy();
-      setParticipantPeer(null);
-    }
+    setParticipantPeer(cleanupParticipantPeer(participantPeer));
     setRemoteStream(null);
     setConnectionStatus('idle');
-    
-    // Navigate to home with completely new URL (removes query params)
     window.location.href = '/';
   };
 
@@ -85,10 +78,7 @@ export function ParticipantPage() {
     return () => {
       if (participantPeer) {
         console.log('[ParticipantPage] Cleaning up participant peer on unmount');
-        // Remove all event listeners before destroying to prevent status changes
-        participantPeer.removeAllListeners();
-        participantPeer.destroy();
-        setParticipantPeer(null);
+        setParticipantPeer(cleanupParticipantPeer(participantPeer));
       }
       setRemoteStream(null);
       setConnectionStatus('idle');

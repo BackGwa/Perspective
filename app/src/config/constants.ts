@@ -144,3 +144,7 @@ const getMaxParticipants = (): number => {
 export const PARTICIPANT_CONFIG = {
   MAX_PARTICIPANTS: getMaxParticipants()
 } as const;
+
+export * from './uiText';
+export * from './timing';
+export * from './design';

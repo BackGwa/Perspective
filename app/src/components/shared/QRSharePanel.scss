@@ -1,23 +1,23 @@
 .qr-share-panel {
     // Container
     position: absolute;
-    bottom: calc(100% + 24px); // 24px gap above control buttons
+    bottom: calc(100% + var(--spacing-panel-gap));
     left: 50%;
     transform: translateX(-50%);
 
     // Design
     background: color-mix(in srgb, var(--bg-primary), transparent 5%);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(var(--blur-backdrop-qr));
     border: 1px solid color-mix(in srgb, var(--text-secondary), transparent 90%);
-    border-radius: 16px;
+    border-radius: var(--border-radius-qr-panel);
     padding: var(--spacing-lg);
     box-shadow: var(--shadow-xl);
 
     // Animation
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp var(--duration-slide) cubic-bezier(0.16, 1, 0.3, 1);
     z-index: calc(var(--z-overlay) + 10);
 
-    min-width: 280px;
+    min-width: var(--size-qr-panel-min);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -34,7 +34,7 @@
         box-sizing: border-box;
 
         svg {
-            display: block; // Remove extra space
+            display: block;
             width: 100% !important;
             height: 100% !important;
         }
@@ -48,7 +48,7 @@
         border: none;
         border-radius: var(--border-radius-circle);
         font-family: var(--font-family);
-        font-size: 0.9rem;
+        font-size: var(--font-size-copy-button);
         font-weight: 500;
         cursor: pointer;
         transition: all var(--transition-base);

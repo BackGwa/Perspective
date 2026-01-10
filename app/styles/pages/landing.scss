@@ -55,7 +55,7 @@
                 transform: translate(-50%, -50%);
 
                 img {
-                    width: 17.5rem;
+                    width: var(--size-brand-title-desktop);
                     opacity: 1;
                 }
             }
@@ -256,7 +256,7 @@
                     transform: none;
 
                     img {
-                        width: 12.5rem;
+                        width: var(--size-brand-title-mobile);
                         margin: auto;
                     }
                 }
@@ -270,7 +270,7 @@
             right: 0;
             margin: 0 auto;
             width: 100%;
-            max-width: $breakpoint-mobile; // Keep this constraint for the centered menu
+            max-width: $breakpoint-mobile;
             padding: var(--spacing-md) var(--spacing-md);
             padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
             height: auto;
@@ -279,6 +279,10 @@
             background: rgba(var(--rgb-bg-primary), 0.9);
             backdrop-filter: blur(var(--blur-md));
             border-radius: var(--border-radius-2xl) var(--border-radius-2xl) 0 0;
+
+            &.keyboard-open {
+                padding-bottom: var(--spacing-md);
+            }
         }
 
         &__menu {

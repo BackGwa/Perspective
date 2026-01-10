@@ -11,6 +11,10 @@ import {
     IconBack,
     IconQr
 } from '../components/icons';
+import { LANDING_MENU, JOIN_FLOW } from '../config/uiText';
+import { TIMING } from '../config/timing';
+import { VALIDATION } from '../config/design';
+import { cleanupParticipantPeer } from '../utils/peerCleanup';
 
 type MenuState = 'root' | 'share' | 'settings' | 'join';
 type JoinMode = 'input' | 'qr';
@@ -77,8 +81,8 @@ export function LandingPage() {
     useEffect(() => {
         if (!landingPageRef.current || !leftPanelRef.current) return;
 
-        // Only apply on mobile/tablet (max-width: 1024px)
-        if (window.innerWidth > 1024) return;
+        // Only apply on mobile/tablet (max-width: VALIDATION.DESKTOP_BREAKPOINTpx)
+        if (window.innerWidth > VALIDATION.DESKTOP_BREAKPOINT) return;
 
         const visualViewport = window.visualViewport;
         if (!visualViewport) return;
@@ -133,8 +137,8 @@ export function LandingPage() {
         const adjustBrandTitleHeight = () => {
             if (!rightPanelRef.current || !brandTitleRef.current) return;
 
-            // Only apply on mobile/tablet (max-width: 1024px)
-            if (window.innerWidth > 1024) {
+            // Only apply on mobile/tablet (max-width: VALIDATION.DESKTOP_BREAKPOINTpx)
+            if (window.innerWidth > VALIDATION.DESKTOP_BREAKPOINT) {
                 brandTitleRef.current.style.height = '';
                 return;
             }
@@ -202,13 +206,7 @@ export function LandingPage() {
         onMaxRetriesExceeded: () => {
             console.log('[LandingPage] Max retries exceeded');
             setError(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
-
-            // Clean up temporary peer
-            if (tempPeerForVerification) {
-                tempPeerForVerification.destroy();
-                setTempPeerForVerification(null);
-            }
-
+            setTempPeerForVerification(cleanupParticipantPeer(tempPeerForVerification));
             setIsAwaitingPasswordVerification(false);
             setHostPeerIdForVerification(null);
             setDataConnectionForVerification(null);
@@ -231,56 +229,9 @@ export function LandingPage() {
             console.log('[LandingPage] Auto-join triggered with session ID:', location.state.sessionId);
             setMenuState('join');
             setSessionId(location.state.sessionId);
-            // Trigger join after a short delay to ensure UI is ready
-            setTimeout(async () => {
-                // Copy the handleJoin logic here to avoid dependency issues
-                const sid = location.state.sessionId;
-                if (!sid.trim()) return;
-
-                try {
-                    setError(null);
-                    setIsConnecting(true);
-                    await peerService.validateConnection(sid);
-
-                    const tempPeer = new (await import('peerjs')).default();
-                    setTempPeerForVerification(tempPeer);
-
-                    tempPeer.on('open', () => {
-                        const dataConn = tempPeer.connect(sid);
-
-                        dataConn.on('open', () => {
-                            setIsConnecting(false);
-                            setHostPeerIdForVerification(sid);
-                            setDataConnectionForVerification(dataConn);
-                            setIsAwaitingPasswordVerification(true);
-                        });
-
-                        dataConn.on('error', (err) => {
-                            console.error('[LandingPage] Data connection error:', err);
-                            setError(ERROR_MESSAGES.CONNECTION_ERROR);
-                            setIsConnecting(false);
-                            if (tempPeer) {
-                                tempPeer.destroy();
-                                setTempPeerForVerification(null);
-                            }
-                        });
-
-                        tempPeer.on('error', (err) => {
-                            console.error('[LandingPage] Peer error:', err);
-                            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-                            setIsConnecting(false);
-                            if (tempPeer) {
-                                tempPeer.destroy();
-                                setTempPeerForVerification(null);
-                            }
-                        });
-                    });
-                } catch (err) {
-                    console.error(err);
-                    setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-                    setIsConnecting(false);
-                }
-            }, 100);
+            setTimeout(() => {
+                startJoinFlow(location.state.sessionId);
+            }, TIMING.AUTO_JOIN_DELAY);
         }
     }, [location]);
 
@@ -354,7 +305,7 @@ export function LandingPage() {
     const handleBack = () => {
         if (isConnecting || isVerifying) return;
 
-        const isDesktop = window.innerWidth > 1024;
+        const isDesktop = window.innerWidth > VALIDATION.DESKTOP_BREAKPOINT;
 
         // Cleanup QR camera
         if (joinMode === 'qr') {
@@ -370,12 +321,7 @@ export function LandingPage() {
 
         // Handle back from join menu with password verification in progress
         if (menuState === 'join' && isAwaitingPasswordVerification) {
-            // Clean up temporary peer
-            if (tempPeerForVerification) {
-                tempPeerForVerification.destroy();
-                setTempPeerForVerification(null);
-            }
-
+            setTempPeerForVerification(cleanupParticipantPeer(tempPeerForVerification));
             setIsAwaitingPasswordVerification(false);
             setHostPeerIdForVerification(null);
             setDataConnectionForVerification(null);
@@ -403,7 +349,7 @@ export function LandingPage() {
 
     const startQRCamera = async () => {
         try {
-            const isMobile = window.innerWidth <= 1024;
+            const isMobile = window.innerWidth <= VALIDATION.DESKTOP_BREAKPOINT;
             const constraints: MediaStreamConstraints = {
                 video: isMobile
                     ? { facingMode: { ideal: 'environment' } } // Mobile: Rear camera
@@ -449,7 +395,7 @@ export function LandingPage() {
         setError(errorMessage);
         setTimeout(() => {
             if (joinMode === 'qr') setError(null);
-        }, 3000);
+        }, TIMING.ERROR_DISPLAY_DURATION);
     }, [joinMode]);
 
     const handleQRCodeScanned = useCallback(async (result: QRScanResult) => {
@@ -487,7 +433,7 @@ export function LandingPage() {
         enabled: joinMode === 'qr' && menuState === 'join' && qrCameraStream !== null,
         onScan: handleQRCodeScanned,
         onError: handleQRScanError,
-        scanInterval: 200
+        scanInterval: TIMING.QR_SCAN_INTERVAL
     });
 
     // Share Actions
@@ -505,10 +451,7 @@ export function LandingPage() {
             setIsConnecting(true);
 
             // Clean up any previous session state
-            if (tempPeerForVerification) {
-                tempPeerForVerification.destroy();
-                setTempPeerForVerification(null);
-            }
+            setTempPeerForVerification(cleanupParticipantPeer(tempPeerForVerification));
             setParticipantPeer(null);
             setRemoteStream(null);
             setConnectionStatus('idle');
@@ -562,10 +505,7 @@ export function LandingPage() {
                     console.error('[LandingPage] Data connection error:', err);
                     setError(ERROR_MESSAGES.CONNECTION_ERROR);
                     setIsConnecting(false);
-                    if (tempPeer) {
-                        tempPeer.destroy();
-                        setTempPeerForVerification(null);
-                    }
+                    setTempPeerForVerification(cleanupParticipantPeer(tempPeer));
                 });
             });
 
@@ -573,10 +513,7 @@ export function LandingPage() {
                 console.error('[LandingPage] Peer error during join:', err);
                 setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
                 setIsConnecting(false);
-                if (tempPeer) {
-                    tempPeer.destroy();
-                    setTempPeerForVerification(null);
-                }
+                setTempPeerForVerification(cleanupParticipantPeer(tempPeer));
             });
 
         } catch (err) {
@@ -645,7 +582,7 @@ export function LandingPage() {
                 </div>
             </div>
 
-            <div className="landing-page__right" ref={rightPanelRef}>
+            <div className={`landing-page__right ${isInputFocused ? 'keyboard-open' : ''}`} ref={rightPanelRef}>
                 <div
                     className="landing-page__menu-wrapper"
                     style={{ height: menuHeight === 'auto' ? 'auto' : `${menuHeight}px` }}
@@ -656,17 +593,12 @@ export function LandingPage() {
                             <>
                                 <button className="menu-button" onClick={handleStartSharing} key="root-share">
                                     <IconShare className="button-icon" />
-                                    Start Sharing
+                                    {LANDING_MENU.START_SHARING}
                                 </button>
                                 <button className="menu-button menu-button--secondary" onClick={handleJoinSession} key="root-join">
                                     <IconJoin className="button-icon" />
-                                    Join a Session
+                                    {LANDING_MENU.JOIN_SESSION}
                                 </button>
-                                {/* Feature coming soon - Explore Spaces */}
-                                {/* <button className="menu-button menu-button--secondary" onClick={handleExplore}>
-                                <IconExplore className="button-icon" />
-                                Explore Spaces
-                            </button> */}
                             </>
                         )}
 
@@ -674,19 +606,19 @@ export function LandingPage() {
                             <>
                                 <button className="menu-button" onClick={handleCameraShare} key="share-camera">
                                     <IconCamera className="button-icon" />
-                                    Share Camera
+                                    {LANDING_MENU.SHARE_CAMERA}
                                 </button>
                                 <button className="menu-button" onClick={handleScreenShare} key="share-screen">
                                     <IconScreen className="button-icon" />
-                                    Share Screen
+                                    {LANDING_MENU.SHARE_SCREEN}
                                 </button>
                                 <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleShareSettings} key="share-settings">
                                     <IconShare className="button-icon" />
-                                    Share Settings
+                                    {LANDING_MENU.SHARE_SETTINGS}
                                 </button>
                                 <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} key="share-back">
                                     <IconBack className="button-icon" />
-                                    Back
+                                    {LANDING_MENU.BACK}
                                 </button>
                             </>
                         )}
@@ -697,13 +629,13 @@ export function LandingPage() {
                                     <PasswordInput
                                         value={hostPassword}
                                         onChange={setHostPassword}
-                                        placeholder="Room Password (Optional)"
+                                        placeholder={JOIN_FLOW.ROOM_PASSWORD_OPTIONAL}
                                         disabled={false}
                                     />
                                 </div>
                                 <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} key="settings-back">
                                     <IconBack className="button-icon" />
-                                    Back
+                                    {LANDING_MENU.BACK}
                                 </button>
                             </>
                         )}
@@ -716,11 +648,11 @@ export function LandingPage() {
                                             <input
                                                 type="text"
                                                 className="session-id-input"
-                                                placeholder="Enter Session ID"
+                                                placeholder={JOIN_FLOW.ENTER_SESSION_ID}
                                                 value={sessionId}
                                                 onChange={(e) => setSessionId(e.target.value)}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && !isConnecting && (sessionId.trim().length === 36 || sessionId.includes('peer='))) {
+                                                    if (e.key === 'Enter' && !isConnecting && (sessionId.trim().length >= VALIDATION.MIN_SESSION_ID_LENGTH || sessionId.includes('peer='))) {
                                                         handleJoin();
                                                     }
                                                 }}
@@ -733,11 +665,11 @@ export function LandingPage() {
                                             <button
                                                 className="menu-button"
                                                 onClick={handleJoin}
-                                                disabled={isConnecting || !(sessionId.trim().length === 36 || sessionId.includes('peer='))}
+                                                disabled={isConnecting || !(sessionId.trim().length >= VALIDATION.MIN_SESSION_ID_LENGTH || sessionId.includes('peer='))}
                                                 key="join-confirm"
                                             >
                                                 <IconJoin className="button-icon" />
-                                                Join Session
+                                                {JOIN_FLOW.JOIN_SESSION}
                                             </button>
                                         )}
                                     </>
@@ -749,7 +681,7 @@ export function LandingPage() {
                                                 value={participantPassword}
                                                 onChange={setParticipantPassword}
                                                 onSubmit={handlePasswordSubmit}
-                                                placeholder="Password Required"
+                                                placeholder={JOIN_FLOW.PASSWORD_REQUIRED}
                                                 disabled={isVerifying}
                                                 error={!!passwordError}
                                             />
@@ -761,11 +693,11 @@ export function LandingPage() {
                                             key="password-submit"
                                         >
                                             <IconJoin className="button-icon" />
-                                            {isVerifying ? 'Verifying...' : 'Submit Password'}
+                                            {isVerifying ? JOIN_FLOW.VERIFYING : JOIN_FLOW.SUBMIT_PASSWORD}
                                         </button>
                                     </>
                                 )}
-                                {(window.innerWidth > 1024
+                                {(window.innerWidth > VALIDATION.DESKTOP_BREAKPOINT
                                     ? !(joinMode === 'input' && (isInputFocused || sessionId.trim()))
                                     : (joinMode === 'input' && !isInputFocused && !sessionId.trim())
                                 ) && (
@@ -775,12 +707,12 @@ export function LandingPage() {
                                             key="join-qr"
                                         >
                                             <IconQr className="button-icon" />
-                                            {joinMode === 'qr' ? 'Enter Manually' : 'Join with QR'}
+                                            {joinMode === 'qr' ? JOIN_FLOW.ENTER_MANUALLY : JOIN_FLOW.JOIN_WITH_QR}
                                         </button>
                                     )}
                                 <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} disabled={isConnecting} key="join-back">
                                     <IconBack className="button-icon" />
-                                    Back
+                                    {LANDING_MENU.BACK}
                                 </button>
                             </>
                         )}
@@ -799,13 +731,13 @@ export function LandingPage() {
 
                         {isConnecting && (
                             <div className="error-message" style={{ color: 'var(--text-primary)' }}>
-                                Connecting...
+                                {JOIN_FLOW.CONNECTING}
                             </div>
                         )}
 
                         {isVerifying && (
                             <div className="error-message" style={{ color: 'var(--text-primary)' }}>
-                                Verifying password...
+                                {JOIN_FLOW.VERIFYING_PASSWORD}
                             </div>
                         )}
 
