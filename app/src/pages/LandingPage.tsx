@@ -595,7 +595,7 @@ export function LandingPage() {
                                     <IconShare className="button-icon" />
                                     {LANDING_MENU.START_SHARING}
                                 </button>
-                                <button className="menu-button menu-button--secondary" onClick={handleJoinSession} key="root-join">
+                                <button className="menu-button menu-button--secondary" onClick={handleJoinSession} key="root-join" data-delay="0">
                                     <IconJoin className="button-icon" />
                                     {LANDING_MENU.JOIN_SESSION}
                                 </button>
@@ -612,11 +612,11 @@ export function LandingPage() {
                                     <IconScreen className="button-icon" />
                                     {LANDING_MENU.SHARE_SCREEN}
                                 </button>
-                                <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleShareSettings} key="share-settings">
+                                <button className="menu-button menu-button--secondary" onClick={handleShareSettings} key="share-settings" data-delay="0">
                                     <IconShare className="button-icon" />
                                     {LANDING_MENU.SHARE_SETTINGS}
                                 </button>
-                                <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} key="share-back">
+                                <button className="menu-button menu-button--secondary" onClick={handleBack} key="share-back" data-delay="1">
                                     <IconBack className="button-icon" />
                                     {LANDING_MENU.BACK}
                                 </button>
@@ -633,7 +633,7 @@ export function LandingPage() {
                                         disabled={false}
                                     />
                                 </div>
-                                <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} key="settings-back">
+                                <button className="menu-button menu-button--secondary" onClick={handleBack} key="settings-back" data-delay="0">
                                     <IconBack className="button-icon" />
                                     {LANDING_MENU.BACK}
                                 </button>
@@ -710,7 +710,7 @@ export function LandingPage() {
                                             {joinMode === 'qr' ? JOIN_FLOW.ENTER_MANUALLY : JOIN_FLOW.JOIN_WITH_QR}
                                         </button>
                                     )}
-                                <button className="menu-button menu-button--secondary menu-button--animate-in" onClick={handleBack} disabled={isConnecting} key="join-back">
+                                <button className="menu-button menu-button--secondary" onClick={handleBack} disabled={isConnecting} key="join-back" data-delay="0">
                                     <IconBack className="button-icon" />
                                     {LANDING_MENU.BACK}
                                 </button>
