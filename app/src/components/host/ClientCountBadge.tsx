@@ -1,5 +1,5 @@
 import { CLIENT_COUNT } from '../../config/uiText';
-import './ClientCountBadge.scss';
+import '../../../styles/components/client-count-badge.scss';
 
 interface ClientCountBadgeProps {
   participantCount: number;

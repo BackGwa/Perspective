@@ -1,4 +1,4 @@
-import './LoadingSpinner.scss';
+import '../../../styles/components/loading-spinner.scss';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';

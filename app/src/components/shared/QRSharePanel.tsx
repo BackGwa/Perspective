@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { QR_SHARE } from '../../config/uiText';
 import { TIMING } from '../../config/timing';
 import { QR_CODE_DESIGN } from '../../config/design';
-import './QRSharePanel.scss';
+import '../../../styles/components/qr-share-panel.scss';
 
 interface QRSharePanelProps {
   shareLink: string;
