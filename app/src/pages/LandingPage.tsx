@@ -30,6 +30,9 @@ import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
 import { ERROR_MESSAGES } from '../config/constants';
 import { hashPassword } from '../utils/passwordHasher';
+import type { DataConnection } from 'peerjs';
+import Peer from 'peerjs';
+import { isValidPasswordMessage } from '../types/password.types';
 
 export function LandingPage() {
     const navigate = useNavigate();
@@ -51,8 +54,8 @@ export function LandingPage() {
     const [participantPassword, setParticipantPassword] = useState('');
     const [isAwaitingPasswordVerification, setIsAwaitingPasswordVerification] = useState(false);
     const [hostPeerIdForVerification, setHostPeerIdForVerification] = useState<string | null>(null);
-    const [dataConnectionForVerification, setDataConnectionForVerification] = useState<any>(null);
-    const [tempPeerForVerification, setTempPeerForVerification] = useState<any>(null);
+    const [dataConnectionForVerification, setDataConnectionForVerification] = useState<DataConnection | null>(null);
+    const [tempPeerForVerification, setTempPeerForVerification] = useState<Peer | null>(null);
 
     // Animation refs
     const menuRef = useRef<HTMLDivElement>(null);
@@ -474,8 +477,8 @@ export function LandingPage() {
                     // Set up data listener IMMEDIATELY to catch host's initial response
                     // This prevents missing PASSWORD_REQUEST or PASSWORD_APPROVED messages
                     let isPasswordRoom = false;
-                    dataConn.on('data', (data: any) => {
-                        if (!data || typeof data !== 'object') return;
+                    dataConn.on('data', (data: unknown) => {
+                        if (!isValidPasswordMessage(data)) return;
 
                         if (data.type === 'PASSWORD_APPROVED') {
                             // Handle PASSWORD_APPROVED for both public rooms and after password verification

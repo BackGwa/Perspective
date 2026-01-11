@@ -157,7 +157,7 @@ class PeerService {
     }
   }
 
-  sendDataMessage(peerId: string, message: any): void {
+  sendDataMessage(peerId: string, message: unknown): void {
     const conn = this.dataConnections.get(peerId);
     if (conn && conn.open) {
       conn.send(message);

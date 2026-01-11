@@ -49,7 +49,6 @@ export function startContinuousScanning(
   interval: number = 100
 ): () => void {
   let isScanning = true;
-  let intervalId: number;
 
   const scan = () => {
     if (!isScanning) return;
@@ -73,7 +72,7 @@ export function startContinuousScanning(
     }
   };
 
-  intervalId = window.setInterval(scan, interval);
+  const intervalId = window.setInterval(scan, interval);
 
   return () => {
     isScanning = false;

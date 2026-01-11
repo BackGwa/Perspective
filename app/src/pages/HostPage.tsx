@@ -129,7 +129,6 @@ export function HostPage() {
         disconnectRef.current();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run on unmount
 
   useEffect(() => {

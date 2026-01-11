@@ -54,7 +54,7 @@ export function usePasswordVerification({
           onApproved?.();
           break;
 
-        case 'PASSWORD_REJECTED':
+        case 'PASSWORD_REJECTED': {
           console.log('[PasswordVerification] Password rejected:', data.payload);
           const remainingRetries = data.payload?.remainingRetries ?? 0;
           const reason = data.payload?.reason || ERROR_MESSAGES.PASSWORD_INCORRECT;
@@ -74,6 +74,7 @@ export function usePasswordVerification({
             onRejected?.(reason);
           }
           break;
+        }
 
         case 'MAX_PARTICIPANTS_EXCEEDED':
           console.log('[PasswordVerification] Max participants exceeded');
