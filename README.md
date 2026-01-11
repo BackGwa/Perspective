@@ -5,11 +5,11 @@
 **Perspective** is a WebRTC-based Peer-to-Peer real-time screen and camera sharing web application.
 It enables direct client-to-client connections for sharing media streams.
 
-[![GitHub Contributors](https://img.shields.io/github/contributors/BackGwa/Perspective?style=flat-square)](https://github.com/BackGwa/Perspective/graphs/contributors)
-[![GitHub Forks](https://img.shields.io/github/forks/BackGwa/Perspective?style=flat-square)](https://github.com/BackGwa/Perspective/network/members)
-[![GitHub Stars](https://img.shields.io/github/stars/BackGwa/Perspective?style=flat-square)](https://github.com/BackGwa/Perspective/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/BackGwa/Perspective?style=flat-square)](https://github.com/BackGwa/Perspective/issues)
-[![License](https://img.shields.io/github/license/BackGwa/Agentic-Structure?style=flat-square)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)
+[![GitHub Contributors](https://img.shields.io/github/contributors/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/graphs/contributors)
+[![GitHub Forks](https://img.shields.io/github/forks/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/network/members)
+[![GitHub Stars](https://img.shields.io/github/stars/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/issues)
+[![License](https://img.shields.io/github/license/BackGwa/Agentic-Structure)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)
 
 </div>
 
