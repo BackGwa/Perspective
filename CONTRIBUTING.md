@@ -8,9 +8,8 @@ Thank you for your interest in contributing to Perspective!
   - [Branch Examples](#branch-examples)
 - [Pull Request](#pull-request)
   - [PR Title Guidelines](#pr-title-guidelines)
-  - [PR Title Examples](#pr-title-examples)
   - [PR Description Guidelines](#pr-description-guidelines)
-  - [PR Description Examples](#pr-description-examples)
+  - [PR Examples](#pr-examples)
 
 ## Branch
 
@@ -48,23 +47,21 @@ Here are some examples of properly named branches
 - Do not use parentheses
 - Include issue number only for significant changes like bug fixes or new feature proposals
 
-### PR Title Examples
-Here are some examples of properly formatted PR titles
-
-|Type|PR Title|
-|:-:|:--|
-|Feature with refinements|Add session password protection and refine overall style and code|
-|Feature removal|Remove auto-approval for reconnecting peers|
-|Bug fix with issue|Fix login timeout and optimize loading performance (#123)|
-
 ### PR Description Guidelines
 - Describe the impact of the changes
 - Explain the reasoning behind the modifications
 - Mention issue numbers for bug/issue fixes
 - Provide clear context without unnecessary fluff
 
-### PR Description Examples
-Here are some examples of well-written PR descriptions
+### PR Examples
+Here are some examples of properly formatted PRs
 
-Example : Feature Change
-> Eliminated logic that automatically approves peers who reconnect if they were previously approved. This change ensures all participants go through the password protection flow, even on reconnection. Closes #45.
+Example 1: 
+- Title: `Remove auto-approval for reconnecting peers`
+- Description:
+  > Eliminated logic that automatically approves peers who reconnect if they were previously approved. This change ensures all participants go through the password protection flow, even on reconnection. Closes #45.
+
+Example 2: 
+- Title: `Fix login timeout and optimize loading performance (#123)`
+- Description:
+  > Fixed a critical timeout issue where login requests would fail after 5 seconds. Optimized initial loading by implementing lazy loading for non-critical components, reducing bundle size by 30%. Fixes #123.
