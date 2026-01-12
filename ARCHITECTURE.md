@@ -1,102 +1,208 @@
 # Architecture
 Perspective is a P2P screen sharing web application.
-The Host shares screen and camera, and Participants can receive streams in real-time.
+The Host shares screen or camera, and Participants receive the stream in real-time.
 
 ## Data Flow
 
-### Host → Participant Streaming
+### Host to Participant Streaming
 ```mermaid
 sequenceDiagram
-    participant Host as HostPage
+    participant HostLP as LandingPage (Host)
     participant MS as MediaService
-    participant PS as PeerService
     participant SC as StreamContext
+    participant HostPage as HostPage
+    participant PS as PeerService (Host)
     participant Server as PeerJS Server
-    participant Part as ParticipantPage
+    participant PartLP as LandingPage (Participant)
+    participant PPeer as Temp Peer
+    participant PartPage as ParticipantPage
 
-    Host->>MS: startScreenShare()
-    MS->>MS: getDisplayMedia()
-    MS-->>Host: MediaStream
-    Host->>SC: setStream(stream)
+    HostLP->>MS: startCapture(camera|screen)
+    MS->>MS: getUserMedia/getDisplayMedia
+    MS->>MS: applyVideoContentHint(motion|detail)
+    MS-->>HostLP: MediaStream
+    HostLP->>SC: setStream(stream), setSessionPassword(hash|empty)
+    HostLP->>HostPage: navigate(/host)
 
-    Host->>PS: initializePeer('host')
-    PS->>Server: Connect
-    Server-->>PS: PeerId
-    PS-->>Host: PeerId (for QR/Link)
+    HostPage->>PS: initializePeer('host')
+    PS->>Server: connect
+    Server-->>PS: peerId
+    PS-->>HostPage: peerId (for QR/Link)
 
-    Part->>PS: connectToPeer(hostPeerId)
-    PS->>Server: Request Connection
-    Server->>PS: Establish P2P
-    PS->>PS: callPeer(stream)
+    PartLP->>PS: validateConnection(peerId)
+    PS->>Server: temp connect
+    PS-->>PartLP: ok
 
-    PS-->>Part: MediaStream
-    Part->>SC: setRemoteStream(stream)
+    PartLP->>PPeer: new Peer()
+    PPeer->>Server: open
+    PPeer->>PS: connect(hostPeerId) (data channel)
+
+    alt Password protected
+        PS-->>PartLP: PASSWORD_REQUEST
+        PartLP->>PartLP: hashPassword + PASSWORD_RESPONSE
+        PS-->>PartLP: PASSWORD_APPROVED
+    else Public room
+        PS-->>PartLP: PASSWORD_APPROVED
+    end
+
+    PartLP->>SC: setParticipantPeer(tempPeer)
+    PartLP->>PartPage: navigate(/share?peer=...)
+    PS->>PS: callPeer(stream) + applyVideoDegradationPreference
+    PS-->>PPeer: MediaStream
+    PPeer-->>PartPage: call(stream)
+    PartPage->>SC: setRemoteStream(stream)
 ```
 
 ### Password Authentication Flow
 ```mermaid
 sequenceDiagram
-    participant Host as HostPage
-    participant PwdS as PasswordService
+    participant Host as LandingPage/HostPage
     participant SC as StreamContext
-    participant Part as ParticipantPage
+    participant PwdH as usePasswordProtection
+    participant Part as LandingPage (Participant)
     participant PwdV as usePasswordVerification
 
-    Host->>PwdS: generatePassword()
-    PwdS->>PwdS: hashPassword()
-    PwdS-->>Host: hashedPassword
-    Host->>SC: setSessionPassword(hash)
+    Host->>SC: setSessionPassword(hash|empty)
+    Part->>PwdH: data connection opened
+    PwdH->>PwdH: check max participants + isPasswordProtected
 
-    Part->>Part: Enter Password
-    Part->>PwdV: verifyPassword(input, hash)
-    PwdV->>PwdV: hashPassword(input)
-    PwdV->>PwdV: compare hashes
-    PwdV-->>Part: isValid
-
-    alt Password Valid
-        Part->>Part: Allow Connection
-    else Password Invalid
-        Part->>Part: Show Error
+    alt Max participants
+        PwdH-->>Part: MAX_PARTICIPANTS_EXCEEDED
+    else Public room
+        PwdH-->>Part: PASSWORD_APPROVED
+    else Password protected
+        PwdH-->>Part: PASSWORD_REQUEST
+        Part->>PwdV: submitPassword()
+        PwdV->>PwdV: hashPassword(input)
+        PwdV-->>PwdH: PASSWORD_RESPONSE(hash)
+        PwdH->>PwdH: verifyPassword(hash)
+        alt Valid
+            PwdH-->>Part: PASSWORD_APPROVED
+        else Invalid
+            PwdH-->>Part: PASSWORD_REJECTED(remainingRetries)
+            opt remainingRetries == 0
+                PwdH-->>Part: close data connection
+            end
+        end
     end
 ```
 
 ## Main Feature Flows
 
-### 1. Start Host Screen Share
+### 1. Start Host Share
 ```mermaid
 flowchart TD
-    A[Host clicks Share Screen] --> B{Media Type?}
-    B -->|Screen| C[getDisplayMedia]
-    B -->|Camera| D[getUserMedia]
+    A[Host selects Share Camera/Screen] --> B["setSessionPassword(hash or empty)"]
+    B --> C["startCapture(camera or screen)"]
+    C --> D{Source type?}
+    D -->|Screen| E[getDisplayMedia]
+    D -->|Camera| F[getUserMedia]
 
-    C --> E[MediaStream obtained]
-    D --> E
+    E --> G["applyVideoContentHint(detail)"]
+    F --> H["applyVideoContentHint(motion)"]
+    G --> I[MediaStream obtained]
+    H --> I
 
-    E --> F[Set stream in StreamContext]
-    F --> G[Initialize Peer]
-    G --> H[Get Peer ID]
-    H --> I[Generate QR Code & Link]
-    I --> J[Display to Host]
-    J --> K[Wait for Participants]
+    I --> J[StreamContext: setStream]
+    J --> K[Navigate to HostPage]
+    K --> L[Initialize Peer]
+    L --> M[Get Peer ID]
+    M --> N[Generate QR Code & Link]
+    N --> O[Wait for Participants]
 ```
 
 ### 2. Participant Connection
 ```mermaid
 flowchart TD
     A[Participant scans QR or enters link] --> B[Extract Peer ID]
-    B --> C{Password Protected?}
+    B --> C["validateConnection(peerId)"]
+    C --> D[Create temp Peer + data connection]
+    D --> E{Max participants?}
 
-    C -->|Yes| D[Enter Password]
-    C -->|No| E[Connect to Host]
+    E -->|Exceeded| F[Show error and stop]
+    E -->|Available| G{Password protected?}
 
-    D --> F{Password Valid?}
-    F -->|No| G[Show Error]
-    F -->|Yes| E
+    G -->|No| H[Receive PASSWORD_APPROVED]
+    G -->|Yes| I[Show password input]
+    I --> J[hashPassword + PASSWORD_RESPONSE]
+    J --> K{Approved?}
+    K -->|No| L[Show error / retry]
+    K -->|Yes| H
 
-    G --> D
+    H --> M["StreamContext: setParticipantPeer(tempPeer)"]
+    M --> N[Navigate to ParticipantPage]
+    N --> O[Wait for host call]
+    O --> P[Receive MediaStream]
+    P --> Q[StreamContext: setRemoteStream]
+```
 
-    E --> H[Initialize Peer]
-    H --> I[Establish Data Connection]
-    I --> J[Receive Media Stream]
-    J --> K[Display Remote Stream]
+### 3. QR Scan and URL Validation
+```mermaid
+flowchart TD
+    A[User selects Join with QR] --> B["startQRCamera()"]
+    B --> C["getUserMedia(facingMode)"]
+    C --> D[Attach stream to QR video element]
+    D --> E[useQRScanner enabled]
+    E --> F[startContinuousScanning]
+    F --> G["scanVideoFrame + jsQR"]
+    G --> H{Valid URL?}
+    H -->|No| I[Show error message]
+    I --> F
+    H -->|Yes| J[Stop scanning + stop camera]
+    J --> K[Set sessionId + switch to input mode]
+    K --> L["startJoinFlow(peerId)"]
+```
+
+## Media Control Flows
+
+### 1. Host Toggle Video
+```mermaid
+flowchart TD
+    A[Host clicks Video toggle] --> B[useMediaStream.toggleVideo]
+    B --> C[MediaService.toggleVideo]
+    C --> D[Set video track enabled/disabled]
+    D --> E{Source type is screen?}
+    E -->|Yes| F[Toggle system audio track]
+    E -->|No| G[No extra audio toggle]
+    C --> H[StreamContext: setPaused]
+```
+
+### 2. Host Toggle Audio
+```mermaid
+flowchart TD
+    A[Host clicks Audio toggle] --> B[useMediaStream.toggleAudio]
+    B --> C[MediaService.toggleAudio]
+    C --> D[Toggle microphone track]
+    C --> E[StreamContext: setMuted]
+```
+
+### 3. Host Switch Camera
+```mermaid
+flowchart TD
+    A[Host clicks Switch Camera] --> B[useMediaStream.switchCamera]
+    B --> C{sourceType == camera?}
+    C -->|No| D[Show error]
+    C -->|Yes| E[Stop current video track]
+    E --> F["getCameraStream(opposite facingMode)"]
+    F --> G[Replace video track on stream]
+    G --> H[Stop new stream audio tracks]
+```
+
+## Cleanup and Exit
+```mermaid
+flowchart TD
+    A[Exit event] --> B{Scenario}
+    B -->|Host clicks Stop| C[useMediaStream.stopCapture]
+    C --> D["MediaService.stopStream - stop tracks"]
+    D --> E[StreamContext: clearStream]
+    E --> F[peerService.destroyPeer]
+    F --> G[Navigate to LandingPage]
+
+    B -->|Participant clicks Leave| H[cleanupParticipantPeer]
+    H --> I["StreamContext: setRemoteStream(null)"]
+    I --> J["ConnectionStatus: idle"]
+    J --> K[Redirect to LandingPage]
+
+    B -->|Screen share ended| L[Video track ended event]
+    L --> D
 ```
