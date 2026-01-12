@@ -70,7 +70,7 @@ export function ParticipantPage() {
     setParticipantPeer(cleanupParticipantPeer(participantPeer));
     setRemoteStream(null);
     setConnectionStatus('idle');
-    window.location.href = '/';
+    navigate('/', { replace: true });
   };
 
   // Clean up on unmount
