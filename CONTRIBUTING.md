@@ -81,6 +81,7 @@ Template (copy/paste):
 - [ ] New feature (features/)
 - [ ] Refactoring (refactor/)
 - [ ] Hotfix (hotfix/)
+- [ ] Chore (chore/)
 
 ## Related Issues
 <!-- Mention issue numbers for bug/issue fixes using 'Closes #123' or 'Fixes #123' -->
