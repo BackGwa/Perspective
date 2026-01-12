@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MediaConnection, DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
+import type { MediaSourceType } from '../types/media.types';
 import { peerService } from '../services/peerService';
 import { useStreamContext } from '../contexts/StreamContext';
 import { usePasswordProtection } from './usePasswordProtection';
@@ -9,11 +10,18 @@ import type { PeerRole } from '../types/peer.types';
 interface UsePeerConnectionOptions {
   role: PeerRole;
   stream?: MediaStream | null;
+  sourceType?: MediaSourceType | null;
   hostPeerId?: string | null;
   existingPeer?: Peer | null; // Reuse existing peer for participant
 }
 
-export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: UsePeerConnectionOptions) {
+const getDegradationPreference = (sourceType?: MediaSourceType | null): RTCDegradationPreference => {
+  if (sourceType === 'screen') return 'maintain-resolution';
+  if (sourceType === 'camera') return 'maintain-framerate';
+  return 'balanced';
+};
+
+export function usePeerConnection({ role, stream, sourceType, hostPeerId, existingPeer }: UsePeerConnectionOptions) {
   const {
     peerId,
     setPeerId,
@@ -42,7 +50,9 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
     const currentStream = streamRef.current;
     if (currentStream) {
       console.log('[usePeerConnection] Calling approved participant:', participantId);
-      const call = peerService.callPeer(participantId, currentStream);
+      const call = peerService.callPeer(participantId, currentStream, {
+        degradationPreference: getDegradationPreference(sourceType)
+      });
       participantsRef.current.set(participantId, call);
 
       call.on('close', () => {
@@ -53,7 +63,7 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
       // Stream not ready yet, add to pending participants
       pendingParticipantsRef.current.add(participantId);
     }
-  }, []);
+  }, [sourceType]);
 
   const handleParticipantRejected = useCallback((participantId: string) => {
     console.log('[usePeerConnection] Participant rejected:', participantId);
@@ -255,7 +265,9 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
       if (pendingParticipantsRef.current.size > 0) {
         console.log('Stream ready, calling pending participants:', pendingParticipantsRef.current);
         pendingParticipantsRef.current.forEach((participantId) => {
-          const call = peerService.callPeer(participantId, stream);
+          const call = peerService.callPeer(participantId, stream, {
+            degradationPreference: getDegradationPreference(sourceType)
+          });
           participantsRef.current.set(participantId, call);
 
           call.on('close', () => {
@@ -275,10 +287,11 @@ export function usePeerConnection({ role, stream, hostPeerId, existingPeer }: Us
               sender.replaceTrack(track);
             }
           });
+          peerService.applyVideoDegradationPreference(call, getDegradationPreference(sourceType));
         });
       }
     }
-  }, [role, stream, connectionStatus]);
+  }, [role, stream, connectionStatus, sourceType]);
 
   return {
     peerId,

@@ -45,7 +45,8 @@ export function HostPage() {
 
   const { disconnect, getShareLink, participantCount } = usePeerConnection({
     role: 'host',
-    stream
+    stream,
+    sourceType
   });
 
   useEffect(() => {

@@ -5,10 +5,12 @@ Thank you for your interest in contributing to Perspective!
 - [Branch](#branch)
   - [Branch Naming Convention](#branch-naming-convention)
   - [Branch Naming Guidelines](#branch-naming-guidelines)
+  - [Reserved Branches](#reserved-branches)
   - [Branch Examples](#branch-examples)
 - [Pull Request](#pull-request)
   - [PR Title Guidelines](#pr-title-guidelines)
   - [PR Description Guidelines](#pr-description-guidelines)
+  - [PR Template Sections](#pr-template-sections)
   - [PR Examples](#pr-examples)
 
 ## Branch
@@ -22,12 +24,17 @@ We follow a specific naming convention for branches to maintain clarity and orga
 |`features/`|New features|
 |`refactor/`|Code refactoring|
 |`hotfix/`|Urgent critical fixes|
+|`chore/`|Maintenance tasks and items not covered by the categories above|
 
 ### Branch Naming Guidelines
 - Specify what feature or bug is being addressed
 - Use lowercase with hyphens to separate words
 - Clearly identify the specific component, feature, or issue
 - Avoid using issue numbers in branch names
+
+### Reserved Branches
+- `develop` is reserved for maintainers and is not available for external contributors
+- It is used for integration testing and small development-stage changes
 
 ### Branch Examples
 Here are some examples of properly named branches
@@ -38,6 +45,7 @@ Here are some examples of properly named branches
 |New feature|`features/peer-connection`|
 |Refactoring|`refactor/state-management`|
 |Hotfix|`hotfix/session-hijacking`|
+|Chore|`chore/update-dependencies`|
 
 ## Pull Request
 
@@ -53,15 +61,42 @@ Here are some examples of properly named branches
 - Mention issue numbers for bug/issue fixes
 - Provide clear context without unnecessary fluff
 
+### PR Template Sections
+Follow the PR template and fill in each section
+
+Template (copy/paste):
+```markdown
+## Description
+<!-- Describe the impact of the changes and explain the reasoning behind the modifications -->
+
+## Type of Change
+- [ ] Bug fix (bugs/)
+- [ ] New feature (features/)
+- [ ] Refactoring (refactor/)
+- [ ] Hotfix (hotfix/)
+
+## Related Issues
+<!-- Mention issue numbers for bug/issue fixes using 'Closes #123' or 'Fixes #123' -->
+
+## Changes Made
+<!-- List the main changes made in this PR -->
+-
+-
+-
+
+## Screenshots/Videos
+<!-- If applicable, add screenshots or videos to demonstrate the changes -->
+
+## Checklist
+- [ ] Code follows the project's coding style
+- [ ] Self-review completed
+- [ ] Documentation updated (if necessary)
+
+## Additional Notes
+<!-- Any additional information that reviewers should know -->
+```
+
 ### PR Examples
-Here are some examples of properly formatted PRs
-
-Example 1: 
-- Title: `Remove auto-approval for reconnecting peers`
-- Description:
-  > Eliminated logic that automatically approves peers who reconnect if they were previously approved. This change ensures all participants go through the password protection flow, even on reconnection. Closes #45.
-
-Example 2: 
-- Title: `Fix login timeout and optimize loading performance (#123)`
-- Description:
-  > Fixed a critical timeout issue where login requests would fail after 5 seconds. Optimized initial loading by implementing lazy loading for non-critical components, reducing bundle size by 30%. Fixes #123.
+See real PRs:
+- https://github.com/BackGwa/Perspective/pull/6
+- https://github.com/BackGwa/Perspective/pull/7

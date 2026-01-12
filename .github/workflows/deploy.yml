@@ -41,7 +41,7 @@ jobs:
         env:
           VITE_APP_DOMAIN: https://backgwa.github.io/Perspective/
           VITE_PEERJS_SECURE: true
-          VITE_MAX_PARTICIPANTS: 24
+          VITE_MAX_PARTICIPANTS: 128
           VITE_MAX_PASSWORD_RETRIES: 3
           VITE_MAX_RESOLUTION_WIDTH: 1920
           VITE_MAX_RESOLUTION_HEIGHT: 1080
