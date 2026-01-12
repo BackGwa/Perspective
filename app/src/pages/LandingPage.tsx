@@ -11,7 +11,7 @@ import {
     IconBack,
     IconQr
 } from '../components/icons';
-import { LANDING_MENU, JOIN_FLOW } from '../config/uiText';
+import { LANDING_MENU, JOIN_FLOW, SESSION_SETTINGS } from '../config/uiText';
 import { TIMING } from '../config/timing';
 import { VALIDATION } from '../config/design';
 import { cleanupParticipantPeer } from '../utils/peerCleanup';
@@ -33,11 +33,20 @@ import { hashPassword } from '../utils/passwordHasher';
 import type { DataConnection } from 'peerjs';
 import Peer from 'peerjs';
 import { isValidPasswordMessage } from '../types/password.types';
+import type { SessionJoinRequestMessage } from '../types/session.types';
+import { isSessionJoinRejectedMessage } from '../types/session.types';
 
 export function LandingPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { setSessionPassword, setParticipantPeer, setRemoteStream, setConnectionStatus } = useStreamContext();
+    const {
+        setSessionPassword,
+        setParticipantPeer,
+        setRemoteStream,
+        setConnectionStatus,
+        sessionDomainPolicy,
+        setSessionDomainPolicy
+    } = useStreamContext();
 
     const [menuState, setMenuState] = useState<MenuState>('root');
     const [error, setError] = useState<string | null>(null);
@@ -300,6 +309,10 @@ export function LandingPage() {
         setMenuState('settings');
     };
 
+    const handleDomainPolicyToggle = () => {
+        setSessionDomainPolicy(sessionDomainPolicy === 'same-domain' ? 'all-domains' : 'same-domain');
+    };
+
     const handleJoinSession = () => {
         setError(null);
         setMenuState('join');
@@ -474,10 +487,35 @@ export function LandingPage() {
                 dataConn.on('open', () => {
                     console.log('[LandingPage] Data connection established for verification');
 
+                    const joinRequestMessage: SessionJoinRequestMessage = {
+                        type: 'SESSION_JOIN_REQUEST',
+                        payload: {
+                            origin: window.location.origin
+                        }
+                    };
+
+                    setTimeout(() => {
+                        if (dataConn.open) {
+                            dataConn.send(joinRequestMessage);
+                        }
+                    }, TIMING.JOIN_REQUEST_DELAY);
+
                     // Set up data listener IMMEDIATELY to catch host's initial response
                     // This prevents missing PASSWORD_REQUEST or PASSWORD_APPROVED messages
                     let isPasswordRoom = false;
                     dataConn.on('data', (data: unknown) => {
+                        if (isSessionJoinRejectedMessage(data)) {
+                            console.log('[LandingPage] Join rejected:', data.payload.reason);
+                            setError(data.payload.reason);
+                            setIsConnecting(false);
+                            setIsAwaitingPasswordVerification(false);
+                            setHostPeerIdForVerification(null);
+                            setDataConnectionForVerification(null);
+                            setTempPeerForVerification(cleanupParticipantPeer(tempPeer));
+                            dataConn.close();
+                            return;
+                        }
+
                         if (!isValidPasswordMessage(data)) return;
 
                         if (data.type === 'PASSWORD_APPROVED') {
@@ -638,6 +676,9 @@ export function LandingPage() {
                                         onBlur={() => setIsInputFocused(false)}
                                     />
                                 </div>
+                                <button className="menu-button" onClick={handleDomainPolicyToggle} key="settings-domain">
+                                    {sessionDomainPolicy === 'same-domain' ? SESSION_SETTINGS.DOMAIN_SAME : SESSION_SETTINGS.DOMAIN_ALL}
+                                </button>
                                 <button className="menu-button menu-button--secondary" onClick={handleBack} key="settings-back" data-delay="0">
                                     <IconBack className="button-icon" />
                                     {LANDING_MENU.BACK}

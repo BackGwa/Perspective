@@ -21,6 +21,11 @@ export const JOIN_FLOW = {
   VERIFYING_PASSWORD: 'Verifying password...',
 } as const;
 
+export const SESSION_SETTINGS = {
+  DOMAIN_SAME: 'Allow same-domain participants only',
+  DOMAIN_ALL: 'Allow participants from any domain',
+} as const;
+
 export const HOST_CONTROLS = {
   SWITCH_CAMERA: 'Switch Camera',
   CAMERA_SWITCH_UNAVAILABLE: 'Camera switch unavailable',
@@ -52,7 +57,6 @@ export const ERROR_BOUNDARY = {
 } as const;
 
 export const QR_VALIDATION_ERRORS = {
-  DOMAIN_MISMATCH: 'QR code is for a different Perspective instance.',
   INVALID_FORMAT: 'Invalid QR code format. Please scan a valid share link.',
   MISSING_PEER_ID: 'QR code is missing session information.',
   MALFORMED_URL: 'Unable to read QR code. Please try again.',

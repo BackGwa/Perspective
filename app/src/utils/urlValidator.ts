@@ -4,17 +4,6 @@ import { QR_VALIDATION_ERRORS } from '../config/uiText';
 export function validateQRCodeURL(scannedURL: string): URLValidationResult {
   try {
     const scannedUrl = new URL(scannedURL);
-    const currentUrl = new URL(window.location.href);
-
-    const scannedOrigin = scannedUrl.origin;
-    const currentOrigin = currentUrl.origin;
-
-    if (scannedOrigin !== currentOrigin) {
-      return {
-        isValid: false,
-        error: 'DOMAIN_MISMATCH'
-      };
-    }
 
     const hashPart = scannedUrl.hash;
 
@@ -50,8 +39,6 @@ export function validateQRCodeURL(scannedURL: string): URLValidationResult {
 
 export function getQRErrorMessage(error: QRValidationError): string {
   switch (error) {
-    case 'DOMAIN_MISMATCH':
-      return QR_VALIDATION_ERRORS.DOMAIN_MISMATCH;
     case 'INVALID_FORMAT':
       return QR_VALIDATION_ERRORS.INVALID_FORMAT;
     case 'MISSING_PEER_ID':
