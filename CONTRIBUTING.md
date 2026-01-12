@@ -5,6 +5,7 @@ Thank you for your interest in contributing to Perspective!
 - [Branch](#branch)
   - [Branch Naming Convention](#branch-naming-convention)
   - [Branch Naming Guidelines](#branch-naming-guidelines)
+  - [Reserved Branches](#reserved-branches)
   - [Branch Examples](#branch-examples)
 - [Pull Request](#pull-request)
   - [PR Title Guidelines](#pr-title-guidelines)
@@ -22,12 +23,17 @@ We follow a specific naming convention for branches to maintain clarity and orga
 |`features/`|New features|
 |`refactor/`|Code refactoring|
 |`hotfix/`|Urgent critical fixes|
+|`chore/`|Maintenance tasks and items not covered by the categories above|
 
 ### Branch Naming Guidelines
 - Specify what feature or bug is being addressed
 - Use lowercase with hyphens to separate words
 - Clearly identify the specific component, feature, or issue
 - Avoid using issue numbers in branch names
+
+### Reserved Branches
+- `develop` is reserved for maintainers and is not available for external contributors
+- It is used for integration testing and small development-stage changes
 
 ### Branch Examples
 Here are some examples of properly named branches
@@ -38,6 +44,7 @@ Here are some examples of properly named branches
 |New feature|`features/peer-connection`|
 |Refactoring|`refactor/state-management`|
 |Hotfix|`hotfix/session-hijacking`|
+|Chore|`chore/update-dependencies`|
 
 ## Pull Request
 
