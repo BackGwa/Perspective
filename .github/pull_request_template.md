@@ -7,6 +7,7 @@
 - [ ] New feature (features/)
 - [ ] Refactoring (refactor/)
 - [ ] Hotfix (hotfix/)
+- [ ] Chore (chore/)
 
 
 ## Related Issues
