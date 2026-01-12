@@ -25,12 +25,14 @@ We follow a specific naming convention for branches to maintain clarity and orga
 |`refactor/`|Code refactoring|
 |`hotfix/`|Urgent critical fixes|
 |`chore/`|Maintenance tasks and items not covered by the categories above|
+|`agents/`|Mostly AI-agent-driven contributions; please use `agents/Prefix/...`|
 
 ### Branch Naming Guidelines
 - Specify what feature or bug is being addressed
 - Use lowercase with hyphens to separate words
 - Clearly identify the specific component, feature, or issue
 - Avoid using issue numbers in branch names
+- If most of the work came from an AI Agent (often called Vibe Coding), please use `agents/Prefix/...` where `Prefix` matches the change category (for example, `features`, `bugs`, `refactor`, `hotfix`, `chore`)
 
 ### Reserved Branches
 - `develop` is reserved for maintainers and is not available for external contributors
@@ -46,6 +48,7 @@ Here are some examples of properly named branches
 |Refactoring|`refactor/state-management`|
 |Hotfix|`hotfix/session-hijacking`|
 |Chore|`chore/update-dependencies`|
+|AI agent contribution|`agents/features/qr-share-panel`|
 
 ## Pull Request
 
@@ -60,6 +63,10 @@ Here are some examples of properly named branches
 - Explain the reasoning behind the modifications
 - Mention issue numbers for bug/issue fixes
 - Provide clear context without unnecessary fluff
+
+### AI Agent Usage
+- We love AI-assisted contributions
+- If you used an AI Agent, please add a short note in the PR message `Additional Notes`; if possible, include the tool and model you used. Some models can be genuinely impressive, and we'd love to know what helped you!
 
 ### PR Template Sections
 Follow the PR template and fill in each section
@@ -93,10 +100,11 @@ Template (copy/paste):
 - [ ] Documentation updated (if necessary)
 
 ## Additional Notes
-<!-- Any additional information that reviewers should know -->
+<!-- Any additional information that reviewers should know (mention AI Agent usage here, including tool/model if applicable). Thanks! -->
 ```
 
 ### PR Examples
 See real PRs:
-- https://github.com/BackGwa/Perspective/pull/6
-- https://github.com/BackGwa/Perspective/pull/7
+- [#6 : Add focus handlers to PasswordInput component](https://github.com/BackGwa/Perspective/pull/6)
+- [#7 : Enhance video degradation preference handling](https://github.com/BackGwa/Perspective/pull/7)
+- [#8 : Improve stream quality handling and increase max participants to 128](https://github.com/BackGwa/Perspective/pull/8)
