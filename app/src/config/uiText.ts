@@ -22,8 +22,8 @@ export const JOIN_FLOW = {
 } as const;
 
 export const SESSION_SETTINGS = {
-  DOMAIN_SAME: 'Allow same-domain participants only',
-  DOMAIN_ALL: 'Allow participants from any domain',
+  DOMAIN_SAME: 'Same domain',
+  DOMAIN_ALL: 'All domains',
 } as const;
 
 export const HOST_CONTROLS = {

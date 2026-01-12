@@ -309,10 +309,6 @@ export function LandingPage() {
         setMenuState('settings');
     };
 
-    const handleDomainPolicyToggle = () => {
-        setSessionDomainPolicy(sessionDomainPolicy === 'same-domain' ? 'all-domains' : 'same-domain');
-    };
-
     const handleJoinSession = () => {
         setError(null);
         setMenuState('join');
@@ -676,9 +672,28 @@ export function LandingPage() {
                                         onBlur={() => setIsInputFocused(false)}
                                     />
                                 </div>
-                                <button className="menu-button" onClick={handleDomainPolicyToggle} key="settings-domain">
-                                    {sessionDomainPolicy === 'same-domain' ? SESSION_SETTINGS.DOMAIN_SAME : SESSION_SETTINGS.DOMAIN_ALL}
-                                </button>
+                                <div
+                                    className={`session-domain-toggle ${sessionDomainPolicy === 'same-domain' ? 'session-domain-toggle--same' : 'session-domain-toggle--all'}`}
+                                    role="group"
+                                    aria-label="Participant domain policy"
+                                >
+                                    <button
+                                        type="button"
+                                        className={`session-domain-toggle__option ${sessionDomainPolicy === 'same-domain' ? 'session-domain-toggle__option--active' : ''}`}
+                                        onClick={() => setSessionDomainPolicy('same-domain')}
+                                        aria-pressed={sessionDomainPolicy === 'same-domain'}
+                                    >
+                                        {SESSION_SETTINGS.DOMAIN_SAME}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`session-domain-toggle__option ${sessionDomainPolicy === 'all-domains' ? 'session-domain-toggle__option--active' : ''}`}
+                                        onClick={() => setSessionDomainPolicy('all-domains')}
+                                        aria-pressed={sessionDomainPolicy === 'all-domains'}
+                                    >
+                                        {SESSION_SETTINGS.DOMAIN_ALL}
+                                    </button>
+                                </div>
                                 <button className="menu-button menu-button--secondary" onClick={handleBack} key="settings-back" data-delay="0">
                                     <IconBack className="button-icon" />
                                     {LANDING_MENU.BACK}
