@@ -634,6 +634,8 @@ export function LandingPage() {
                                         onChange={setHostPassword}
                                         placeholder={JOIN_FLOW.ROOM_PASSWORD_OPTIONAL}
                                         disabled={false}
+                                        onFocus={() => setIsInputFocused(true)}
+                                        onBlur={() => setIsInputFocused(false)}
                                     />
                                 </div>
                                 <button className="menu-button menu-button--secondary" onClick={handleBack} key="settings-back" data-delay="0">
@@ -687,6 +689,8 @@ export function LandingPage() {
                                                 placeholder={JOIN_FLOW.PASSWORD_REQUIRED}
                                                 disabled={isVerifying}
                                                 error={!!passwordError}
+                                                onFocus={() => setIsInputFocused(true)}
+                                                onBlur={() => setIsInputFocused(false)}
                                             />
                                         </div>
                                         <button

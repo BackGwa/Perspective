@@ -11,6 +11,8 @@ interface PasswordInputProps {
   placeholder?: string;
   disabled?: boolean;
   error?: boolean;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 export function PasswordInput({
@@ -19,7 +21,9 @@ export function PasswordInput({
   onSubmit,
   placeholder = 'Enter password',
   disabled = false,
-  error = false
+  error = false,
+  onFocus,
+  onBlur
 }: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [lengthError, setLengthError] = useState<string | null>(null);
@@ -58,6 +62,8 @@ export function PasswordInput({
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         onKeyDown={handleKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
         disabled={disabled}
         maxLength={PASSWORD_CONFIG.MAX_LENGTH}
       />
