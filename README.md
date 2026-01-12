@@ -11,6 +11,9 @@ It enables direct client-to-client connections for sharing media streams.
 [![GitHub Issues](https://img.shields.io/github/issues/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/issues)
 [![License](https://img.shields.io/github/license/BackGwa/Agentic-Structure)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)
 
+[![Release](https://img.shields.io/github/v/release/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/releases)
+[![CI/CD](https://github.com/BackGwa/Perspective/actions/workflows/ci.yml/badge.svg)](https://github.com/BackGwa/Perspective/actions)
+
 </div>
 
 ## Getting Started
@@ -82,6 +85,8 @@ For detailed architecture information, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 ## Contributing
 Thank you for contributing to Perspective!
 For contribution guidelines, branch naming conventions, and PR guidelines, please refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+![Contributors](https://contrib.rocks/image?repo=BackGwa/Perspective)
 
 ## License
 This project is distributed under the MIT License. See the [LICENSE](./LICENSE) file for more details.
