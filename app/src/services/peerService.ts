@@ -11,6 +11,10 @@ type PeerEventCallback = {
   onError?: (error: Error) => void;
 };
 
+type CallPeerOptions = {
+  degradationPreference?: RTCDegradationPreference;
+};
+
 class PeerService {
   private peer: Peer | null = null;
   private activeCalls: Map<string, MediaConnection> = new Map();
@@ -76,13 +80,17 @@ class PeerService {
     return this.peer;
   }
 
-  callPeer(peerId: string, stream: MediaStream): MediaConnection {
+  callPeer(peerId: string, stream: MediaStream, options: CallPeerOptions = {}): MediaConnection {
     if (!this.peer) {
       throw new Error(ERROR_MESSAGES.PEER_NOT_INITIALIZED);
     }
 
     const call = this.peer.call(peerId, stream);
     this.activeCalls.set(peerId, call);
+
+    if (options.degradationPreference) {
+      this.applyVideoDegradationPreference(call, options.degradationPreference);
+    }
 
     call.on('close', () => {
       console.log('Call closed with:', peerId);
@@ -180,6 +188,19 @@ class PeerService {
 
   getActiveCalls(): Map<string, MediaConnection> {
     return this.activeCalls;
+  }
+
+  applyVideoDegradationPreference(call: MediaConnection, preference: RTCDegradationPreference): void {
+    const sender = call.peerConnection
+      .getSenders()
+      .find((s) => s.track?.kind === 'video');
+    if (!sender) return;
+
+    const params = sender.getParameters();
+    params.degradationPreference = preference;
+    sender.setParameters(params).catch((error) => {
+      console.warn('Failed to apply degradation preference:', error);
+    });
   }
 
   generateShareLink(peerId: string): string {

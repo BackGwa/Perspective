@@ -2,6 +2,14 @@ import { CAMERA_CONSTRAINTS, SCREEN_CONSTRAINTS, ERROR_MESSAGES } from '../confi
 import type { MediaSourceType } from '../types/media.types';
 
 export type CameraFacingMode = 'user' | 'environment';
+type VideoContentHint = 'detail' | 'motion' | 'text' | 'none';
+
+const applyVideoContentHint = (track: MediaStreamTrack | undefined, hint: VideoContentHint) => {
+  if (!track) return;
+  if ('contentHint' in track) {
+    track.contentHint = hint;
+  }
+};
 
 class MediaService {
   private currentStream: MediaStream | null = null;
@@ -59,6 +67,7 @@ class MediaService {
         }
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      applyVideoContentHint(stream.getVideoTracks()[0], 'motion');
       this.currentStream = stream;
       this.currentFacingMode = targetFacingMode;
       return stream;
@@ -70,6 +79,7 @@ class MediaService {
   async getScreenStream(): Promise<MediaStream> {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia(SCREEN_CONSTRAINTS);
+      applyVideoContentHint(stream.getVideoTracks()[0], 'detail');
       this.currentStream = stream;
 
       stream.getVideoTracks()[0].addEventListener('ended', () => {
