@@ -46,8 +46,6 @@ jobs:
           VITE_MAX_RESOLUTION_WIDTH: 1920
           VITE_MAX_RESOLUTION_HEIGHT: 1080
           VITE_MAX_FRAMERATE: 30
-          VITE_CONNECTION_TIMEOUT: 30
-          VITE_RECONNECT_ATTEMPTS: 3
         run: npm run build
 
       - name: Setup Pages
