@@ -49,10 +49,6 @@ class MediaService {
     return (hasBack && hasFront) || cameras.length >= 2;
   }
 
-  getCurrentFacingMode(): CameraFacingMode {
-    return this.currentFacingMode;
-  }
-
   async getCameraStream(facingMode?: CameraFacingMode): Promise<MediaStream> {
     try {
       const targetFacingMode = facingMode || this.currentFacingMode;
@@ -185,16 +181,6 @@ class MediaService {
     }
   }
 
-  isVideoEnabled(stream: MediaStream): boolean {
-    const videoTrack = stream.getVideoTracks()[0];
-    return videoTrack ? videoTrack.enabled : false;
-  }
-
-  isAudioEnabled(_stream: MediaStream): boolean {
-    // Check microphone track status
-    return this.microphoneTrack ? this.microphoneTrack.enabled : false;
-  }
-
   async switchCamera(currentStream: MediaStream): Promise<MediaStream> {
     if (this.sourceType !== 'camera') {
       throw new Error(ERROR_MESSAGES.CAMERA_SWITCHING_ONLY_AVAILABLE);
@@ -229,15 +215,6 @@ class MediaService {
     } catch (error) {
       throw this.handleMediaError(error);
     }
-  }
-
-  checkWebRTCSupport(): boolean {
-    return !!(
-      navigator.mediaDevices &&
-      typeof navigator.mediaDevices.getUserMedia === 'function' &&
-      typeof navigator.mediaDevices.getDisplayMedia === 'function' &&
-      window.RTCPeerConnection
-    );
   }
 
   private handleMediaError(error: unknown): Error {

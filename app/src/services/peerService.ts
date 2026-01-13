@@ -141,14 +141,6 @@ class PeerService {
     });
   }
 
-  closeCall(peerId: string): void {
-    const call = this.activeCalls.get(peerId);
-    if (call) {
-      call.close();
-      this.activeCalls.delete(peerId);
-    }
-  }
-
   closeAllCalls(): void {
     this.activeCalls.forEach((call) => {
       call.close();
@@ -172,22 +164,6 @@ class PeerService {
     } else {
       console.error('Data connection not available for peer:', peerId);
     }
-  }
-
-  getDataConnection(peerId: string): DataConnection | undefined {
-    return this.dataConnections.get(peerId);
-  }
-
-  getAllDataConnections(): Map<string, DataConnection> {
-    return this.dataConnections;
-  }
-
-  getPeer(): Peer | null {
-    return this.peer;
-  }
-
-  getActiveCalls(): Map<string, MediaConnection> {
-    return this.activeCalls;
   }
 
   applyVideoDegradationPreference(call: MediaConnection, preference: RTCDegradationPreference): void {

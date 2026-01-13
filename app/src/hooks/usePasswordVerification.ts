@@ -21,11 +21,8 @@ export function usePasswordVerification({
   onRejected,
   onMaxRetriesExceeded
 }: UsePasswordVerificationOptions) {
-  const [isPasswordRequired, setIsPasswordRequired] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isApproved, setIsApproved] = useState(false);
 
   // Listen for password messages from host
   useEffect(() => {
@@ -40,17 +37,13 @@ export function usePasswordVerification({
       switch (data.type) {
         case 'PASSWORD_REQUEST':
           console.log('[PasswordVerification] Password required');
-          setIsPasswordRequired(true);
           setIsVerifying(false);
           break;
 
         case 'PASSWORD_APPROVED':
           console.log('[PasswordVerification] Password approved');
-          setIsApproved(true);
-          setIsPasswordRequired(false);
           setIsVerifying(false);
           setErrorMessage(null);
-          setRetryCount(0);
           onApproved?.();
           break;
 
@@ -60,12 +53,10 @@ export function usePasswordVerification({
           const reason = data.payload?.reason || ERROR_MESSAGES.PASSWORD_INCORRECT;
 
           setIsVerifying(false);
-          setRetryCount(prev => prev + 1);
 
           if (remainingRetries === 0) {
             // Max retries exceeded
             setErrorMessage(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
-            setIsPasswordRequired(false);
             onMaxRetriesExceeded?.();
           } else {
             // Still has retries
@@ -79,7 +70,6 @@ export function usePasswordVerification({
         case 'MAX_PARTICIPANTS_EXCEEDED':
           console.log('[PasswordVerification] Max participants exceeded');
           setIsVerifying(false);
-          setIsPasswordRequired(false);
           setErrorMessage(data.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
           onMaxRetriesExceeded?.();
           break;
@@ -131,21 +121,9 @@ export function usePasswordVerification({
     dataConnection.send(responseMessage);
   }, [dataConnection]);
 
-  const resetState = useCallback(() => {
-    setIsPasswordRequired(false);
-    setIsVerifying(false);
-    setRetryCount(0);
-    setErrorMessage(null);
-    setIsApproved(false);
-  }, []);
-
   return {
-    isPasswordRequired,
     isVerifying,
-    retryCount,
     errorMessage,
-    isApproved,
-    submitPassword,
-    resetState
+    submitPassword
   };
 }

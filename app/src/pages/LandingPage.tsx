@@ -50,6 +50,7 @@ export function LandingPage() {
 
     const [menuState, setMenuState] = useState<MenuState>('root');
     const [error, setError] = useState<string | null>(null);
+    const [passwordInputError, setPasswordInputError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [sessionId, setSessionId] = useState('');
     const [joinMode, setJoinMode] = useState<JoinMode>('input');
@@ -246,6 +247,10 @@ export function LandingPage() {
             }, TIMING.AUTO_JOIN_DELAY);
         }
     }, [location]);
+
+    useEffect(() => {
+        setPasswordInputError(null);
+    }, [menuState, isAwaitingPasswordVerification]);
 
     // Cleanup QR camera on unmount or when leaving join menu
     useEffect(() => {
@@ -668,6 +673,7 @@ export function LandingPage() {
                                         onChange={setHostPassword}
                                         placeholder={JOIN_FLOW.ROOM_PASSWORD_OPTIONAL}
                                         disabled={false}
+                                        onValidationError={setPasswordInputError}
                                         onFocus={() => setIsInputFocused(true)}
                                         onBlur={() => setIsInputFocused(false)}
                                     />
@@ -745,6 +751,7 @@ export function LandingPage() {
                                                 placeholder={JOIN_FLOW.PASSWORD_REQUIRED}
                                                 disabled={isVerifying}
                                                 error={!!passwordError}
+                                                onValidationError={setPasswordInputError}
                                                 onFocus={() => setIsInputFocused(true)}
                                                 onBlur={() => setIsInputFocused(false)}
                                             />
@@ -789,6 +796,12 @@ export function LandingPage() {
                         {passwordError && isAwaitingPasswordVerification && (
                             <div className="error-message">
                                 {passwordError}
+                            </div>
+                        )}
+
+                        {passwordInputError && (
+                            <div className="error-message">
+                                {passwordInputError}
                             </div>
                         )}
 
