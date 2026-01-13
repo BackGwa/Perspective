@@ -50,18 +50,21 @@ VITE_PEERJS_PATH=
 VITE_PEERJS_SECURE=true
 VITE_STUN_SERVER_URL=
 
-# Session Configuration
-VITE_MAX_PARTICIPANTS=24
+# Session Settings
+VITE_MAX_PARTICIPANTS=128
 VITE_MAX_PASSWORD_RETRIES=3
 
-# Media Quality Configuration
+# Media Quality Settings
 VITE_MAX_RESOLUTION_WIDTH=1920
 VITE_MAX_RESOLUTION_HEIGHT=1080
 VITE_MAX_FRAMERATE=30
 
-# Connection Configuration
+# Connection Settings
 VITE_CONNECTION_TIMEOUT=30
 VITE_RECONNECT_ATTEMPTS=3
+
+# SEO Settings
+VITE_APP_DOMAIN=https://yourdomain.com/
 ```
 
 > **Note**
