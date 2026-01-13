@@ -29,10 +29,6 @@ sequenceDiagram
     Server-->>PS: peerId
     PS-->>HostPage: peerId (for QR/Link)
 
-    PartLP->>PS: validateConnection(peerId)
-    PS->>Server: temp connect
-    PS-->>PartLP: ok
-
     PartLP->>PPeer: new Peer()
     PPeer->>Server: open
     PPeer->>PS: connect(hostPeerId) (data channel)
@@ -128,10 +124,9 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Participant scans QR or enters link] --> B[Extract Peer ID]
-    B --> C["validateConnection(peerId)"]
-    C --> D[Create temp Peer + data connection]
-    D --> E["Send SESSION_JOIN_REQUEST(origin)"]
-    E --> F{Domain allowed?}
+    B --> C[Create temp Peer + data connection]
+    C --> D["Send SESSION_JOIN_REQUEST(origin)"]
+    D --> F{Domain allowed?}
 
     F -->|No| G[Show error and stop]
     F -->|Yes| H{Max participants?}
