@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, type RefObject } from 'react';
 import {
   IconMicOn,
   IconMicOff,
@@ -18,6 +18,8 @@ import type { MediaSourceType } from '../../types/media.types';
 interface HostControlsProps {
   isPaused: boolean;
   isMuted: boolean;
+  isOverlayVisible: boolean;
+  overlayRef: RefObject<HTMLDivElement>;
   shareLink: string;
   sourceType: MediaSourceType | null;
   canSwitchCamera: boolean;
@@ -31,6 +33,8 @@ interface HostControlsProps {
 export function HostControls({
   isPaused,
   isMuted,
+  isOverlayVisible,
+  overlayRef,
   shareLink,
   sourceType,
   canSwitchCamera,
@@ -50,10 +54,11 @@ export function HostControls({
   };
 
   const isCameraMode = sourceType === 'camera';
+  const isOverlayActive = showQRPanel || isOverlayVisible;
 
   return (
-    <div className={`controls-overlay ${showQRPanel ? 'controls-overlay--visible' : ''}`}>
-      <div ref={containerRef} style={{ position: 'relative', display: 'flex', gap: 'var(--spacing-md)', alignItems: 'center' }}>
+    <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''}`}>
+      <div ref={containerRef} className="controls-overlay__content">
         <ClientCountBadge participantCount={participantCount} />
 
         {showQRPanel && (

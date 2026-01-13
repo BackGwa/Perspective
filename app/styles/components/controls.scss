@@ -23,6 +23,12 @@
   }
 }
 
+.controls-overlay__content {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
 
 .control-button {
   position: relative;
@@ -123,13 +129,25 @@
 @media (max-width: $breakpoint-desktop) {
   .controls-overlay {
     position: relative;
-    opacity: 1;
-    background: var(--bg-primary);
-    backdrop-filter: blur(10px);
+    opacity: 0;
+    background: none;
     height: auto;
     gap: var(--spacing-sm);
-    border-top: 1px solid rgba(var(--rgb-white), 0.1);
+    padding: 0;
+    max-height: 0;
+    transform: translateY(24px);
+    overflow: hidden;
+    pointer-events: none;
+    transition: max-height var(--duration-slide), padding var(--duration-slide), opacity var(--transition-base), transform var(--duration-slide);
+  }
+
+  .controls-overlay.controls-overlay--visible {
+    opacity: 1;
     padding: var(--spacing-md) 0 calc(var(--spacing-md) + env(safe-area-inset-bottom));
+    max-height: calc(var(--spacing-controls-overlay-height) + env(safe-area-inset-bottom));
+    transform: translateY(0);
+    overflow: visible;
+    pointer-events: auto;
   }
 
   .control-button {

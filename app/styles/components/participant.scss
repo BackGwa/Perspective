@@ -18,7 +18,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
+  background: var(--bg-video);
   font-family: var(--font-family);
   position: relative;
 }
@@ -31,12 +31,23 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  transition: margin var(--duration-slide);
+
+  &__frame {
+    max-width: 100%;
+    max-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    overflow: hidden;
+    transition: border-radius var(--duration-slide);
+  }
 
   &__video {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background-color: var(--bg-video);
   }
 
   &__loading {
@@ -137,6 +148,16 @@
 @media (max-width: $breakpoint-desktop) {
   .participant-page {
     touch-action: manipulation;
+  }
+
+  .participant-page--controls-visible {
+    .remote-stream {
+      margin: var(--spacing-md);
+    }
+
+    .remote-stream__frame {
+      border-radius: var(--border-radius-lg);
+    }
   }
 
   .remote-stream {

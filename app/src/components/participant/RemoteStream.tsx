@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { useAspectFit } from '../../hooks/useAspectFit';
 import '../../../styles/components/participant.scss';
 
 interface RemoteStreamProps {
@@ -10,6 +11,8 @@ interface RemoteStreamProps {
 
 export function RemoteStream({ stream, isConnecting, isMuted = true }: RemoteStreamProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { frameStyle, setAspect } = useAspectFit(containerRef);
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -19,9 +22,15 @@ export function RemoteStream({ stream, isConnecting, isMuted = true }: RemoteStr
     }
   }, [stream]);
 
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+
+    setAspect(videoRef.current.videoWidth, videoRef.current.videoHeight);
+  };
+
   if (isConnecting || !stream) {
     return (
-      <div className="remote-stream">
+      <div ref={containerRef} className="remote-stream">
         <div className="remote-stream__loading">
           <LoadingSpinner />
           <p className="remote-stream__loading-text">
@@ -33,14 +42,17 @@ export function RemoteStream({ stream, isConnecting, isMuted = true }: RemoteStr
   }
 
   return (
-    <div className="remote-stream">
-      <video
-        ref={videoRef}
-        className="remote-stream__video"
-        autoPlay
-        playsInline
-        muted={isMuted}
-      />
+    <div ref={containerRef} className="remote-stream">
+      <div className="remote-stream__frame" style={frameStyle}>
+        <video
+          ref={videoRef}
+          className="remote-stream__video"
+          autoPlay
+          playsInline
+          muted={isMuted}
+          onLoadedMetadata={handleLoadedMetadata}
+        />
+      </div>
     </div>
   );
 }
