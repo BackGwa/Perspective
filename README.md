@@ -6,19 +6,19 @@
 
 By utilizing a static client design, it ensures seamless connectivity across any hosting environment as long as standardized signaling protocols are met. This architecture maximizes technical neutrality and connection autonomy by minimizing server intervention, facilitating a purely direct exchange between users.  
 
-
 [![GitHub Contributors](https://img.shields.io/github/contributors/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/graphs/contributors)
 [![GitHub Forks](https://img.shields.io/github/forks/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/network/members)
 [![GitHub Stars](https://img.shields.io/github/stars/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/issues)
-[![License](https://img.shields.io/github/license/BackGwa/Agentic-Structure)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)
-
+[![License](https://img.shields.io/github/license/BackGwa/Agentic-Structure)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)  
 [![Release](https://img.shields.io/github/v/release/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/releases)
 [![CI/CD](https://github.com/BackGwa/Perspective/actions/workflows/ci.yml/badge.svg)](https://github.com/BackGwa/Perspective/actions)
 
 </div>
 
 ## Getting Started
+[![Perspective Stable Preview](https://img.shields.io/badge/preview-stable-1e90ff)](https://backgwa.github.io/Perspective/)
+[![Perspective Development Preview](https://img.shields.io/badge/preview-development-f39c12)](https://perspective-development.pages.dev/)
 
 ### Installation
 1. Clone the repository

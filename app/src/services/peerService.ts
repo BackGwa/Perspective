@@ -198,60 +198,6 @@ class PeerService {
     return new Error(ERROR_MESSAGES.PEER_CONNECTION_FAILED);
   }
 
-  async validateConnection(hostPeerId: string, timeoutMs: number = 5000): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const tempPeer = new Peer({
-        ...PEER_SERVER_CONFIG,
-        config: { iceServers: PEER_CONFIG.iceServers },
-        debug: 0
-      });
-
-      let responseHandled = false;
-      const cleanup = () => {
-        if (!responseHandled) {
-          responseHandled = true;
-          tempPeer.destroy();
-        }
-      };
-
-      const timeoutId = setTimeout(() => {
-        if (!responseHandled) {
-          cleanup();
-          reject(new Error(ERROR_MESSAGES.CONNECTION_TIMED_OUT));
-        }
-      }, timeoutMs);
-
-      tempPeer.on('open', () => {
-        const conn = tempPeer.connect(hostPeerId);
-
-        conn.on('open', () => {
-          clearTimeout(timeoutId);
-          cleanup();
-          resolve(true);
-        });
-
-        conn.on('error', () => {
-          clearTimeout(timeoutId);
-          cleanup();
-          reject(new Error(ERROR_MESSAGES.COULD_NOT_CONNECT_TO_HOST));
-        });
-
-        conn.on('close', () => {
-          if (!responseHandled) {
-            clearTimeout(timeoutId);
-            cleanup();
-            reject(new Error(ERROR_MESSAGES.CONNECTION_CLOSED_IMMEDIATELY));
-          }
-        });
-      });
-
-      tempPeer.on('error', (err) => {
-        clearTimeout(timeoutId);
-        cleanup();
-        reject(err);
-      });
-    });
-  }
 }
 
 export const peerService = new PeerService();
