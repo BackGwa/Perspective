@@ -1,8 +1,16 @@
-import jsQR from 'jsqr';
 import type { QRScanResult } from '../types/qr.types';
 import { validateQRCodeURL, getQRErrorMessage } from './urlValidator';
 
 const canvasCache = new WeakMap<HTMLVideoElement, { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D }>();
+let jsQrModulePromise: Promise<typeof import('jsqr')> | null = null;
+
+const loadJsQR = async () => {
+  if (!jsQrModulePromise) {
+    jsQrModulePromise = import('jsqr');
+  }
+  const module = await jsQrModulePromise;
+  return module.default;
+};
 
 const getCanvasContext = (video: HTMLVideoElement) => {
   const cached = canvasCache.get(video);
@@ -21,7 +29,7 @@ const getCanvasContext = (video: HTMLVideoElement) => {
   return entry;
 };
 
-export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
+export async function scanVideoFrame(video: HTMLVideoElement): Promise<QRScanResult | null> {
   const entry = getCanvasContext(video);
   if (!entry) {
     return null;
@@ -46,6 +54,7 @@ export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
 
   const imageData = context.getImageData(0, 0, width, height);
 
+  const jsQR = await loadJsQR();
   const code = jsQR(imageData.data, imageData.width, imageData.height, {
     inversionAttempts: 'dontInvert',
   });
@@ -78,12 +87,14 @@ export function startContinuousScanning(
   interval: number = 100
 ): () => void {
   let isScanning = true;
+  let isScanInProgress = false;
 
-  const scan = () => {
-    if (!isScanning) return;
+  const scan = async () => {
+    if (!isScanning || isScanInProgress) return;
+    isScanInProgress = true;
 
     try {
-      const result = scanVideoFrame(video);
+      const result = await scanVideoFrame(video);
 
       if (result) {
         if (result.valid) {
@@ -98,10 +109,14 @@ export function startContinuousScanning(
 
     } catch (err) {
       console.error('QR scan error:', err);
+    } finally {
+      isScanInProgress = false;
     }
   };
 
-  const intervalId = window.setInterval(scan, interval);
+  const intervalId = window.setInterval(() => {
+    void scan();
+  }, interval);
 
   return () => {
     isScanning = false;

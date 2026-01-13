@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { useEffect, useState } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 import { QR_SHARE } from '../../config/uiText';
 import { TIMING } from '../../config/timing';
 import { QR_CODE_DESIGN } from '../../config/design';
@@ -9,8 +9,36 @@ interface QRSharePanelProps {
   shareLink: string;
 }
 
+type QRCodeSVGProps = {
+  value: string;
+  size?: number;
+  style?: CSSProperties;
+  level?: 'L' | 'M' | 'Q' | 'H';
+  includeMargin?: boolean;
+  bgColor?: string;
+  fgColor?: string;
+};
+
 export function QRSharePanel({ shareLink }: QRSharePanelProps) {
   const [copied, setCopied] = useState(false);
+  const [QRCodeSVG, setQRCodeSVG] = useState<ComponentType<QRCodeSVGProps> | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    import('qrcode.react')
+      .then((module) => {
+        if (isMounted) {
+          setQRCodeSVG(() => module.QRCodeSVG);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load QR code component:', error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -27,15 +55,17 @@ export function QRSharePanel({ shareLink }: QRSharePanelProps) {
   return (
     <div className="qr-share-panel">
       <div className="qr-share-panel__qr-container">
-        <QRCodeSVG
-          value={shareLink}
-          size={undefined}
-          style={{ width: '100%', height: '100%' }}
-          level={QR_CODE_DESIGN.ERROR_CORRECTION_LEVEL}
-          includeMargin={false}
-          bgColor={QR_CODE_DESIGN.BG_COLOR}
-          fgColor={QR_CODE_DESIGN.FG_COLOR}
-        />
+        {QRCodeSVG && (
+          <QRCodeSVG
+            value={shareLink}
+            size={undefined}
+            style={{ width: '100%', height: '100%' }}
+            level={QR_CODE_DESIGN.ERROR_CORRECTION_LEVEL}
+            includeMargin={false}
+            bgColor={QR_CODE_DESIGN.BG_COLOR}
+            fgColor={QR_CODE_DESIGN.FG_COLOR}
+          />
+        )}
       </div>
 
       <button

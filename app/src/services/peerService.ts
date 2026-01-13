@@ -1,4 +1,5 @@
-import Peer, { type MediaConnection, type DataConnection } from 'peerjs';
+import type Peer from 'peerjs';
+import type { MediaConnection, DataConnection } from 'peerjs';
 import { PEER_CONFIG, PEER_SERVER_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PeerRole } from '../types/peer.types';
 
@@ -19,8 +20,17 @@ class PeerService {
   private peer: Peer | null = null;
   private activeCalls: Map<string, MediaConnection> = new Map();
   private dataConnections: Map<string, DataConnection> = new Map();
+  private peerModulePromise: Promise<typeof import('peerjs')> | null = null;
 
-  initializePeer(role: PeerRole, callbacks: PeerEventCallback): Peer {
+  private async loadPeerModule() {
+    if (!this.peerModulePromise) {
+      this.peerModulePromise = import('peerjs');
+    }
+    return this.peerModulePromise;
+  }
+
+  async initializePeer(role: PeerRole, callbacks: PeerEventCallback): Promise<Peer> {
+    const { default: Peer } = await this.loadPeerModule();
     if (this.peer) {
       this.peer.destroy();
     }
