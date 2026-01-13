@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import type { ComponentType, CSSProperties } from 'react';
 import { QR_SHARE } from '../../config/uiText';
 import { TIMING } from '../../config/timing';
 import { QR_CODE_DESIGN } from '../../config/design';
@@ -9,19 +8,11 @@ interface QRSharePanelProps {
   shareLink: string;
 }
 
-type QRCodeSVGProps = {
-  value: string;
-  size?: number;
-  style?: CSSProperties;
-  level?: 'L' | 'M' | 'Q' | 'H';
-  includeMargin?: boolean;
-  bgColor?: string;
-  fgColor?: string;
-};
+type QRCodeSVGComponent = typeof import('qrcode.react').QRCodeSVG;
 
 export function QRSharePanel({ shareLink }: QRSharePanelProps) {
   const [copied, setCopied] = useState(false);
-  const [QRCodeSVG, setQRCodeSVG] = useState<ComponentType<QRCodeSVGProps> | null>(null);
+  const [QRCodeSVG, setQRCodeSVG] = useState<QRCodeSVGComponent | null>(null);
 
   useEffect(() => {
     let isMounted = true;
