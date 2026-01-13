@@ -7,10 +7,10 @@ import type { PasswordMessage } from '../types/password.types';
 import { isValidPasswordMessage } from '../types/password.types';
 import type { DomainPolicy, SessionJoinRejectedMessage } from '../types/session.types';
 import { isSessionJoinRequestMessage } from '../types/session.types';
-import { generateNonce, hmacSha256 } from '../utils/passwordHasher';
+import { generateNonce, hmacSha256 } from '../utils/passwordCrypto';
 
 interface UsePasswordProtectionOptions {
-  sessionPassword: string | null;
+  sessionSecret: string | null;
   domainPolicy: DomainPolicy;
   currentParticipantCount: number;
   onParticipantApproved?: (peerId: string) => void;
@@ -18,7 +18,7 @@ interface UsePasswordProtectionOptions {
 }
 
 export function usePasswordProtection({
-  sessionPassword,
+  sessionSecret,
   domainPolicy,
   currentParticipantCount,
   onParticipantApproved,
@@ -29,7 +29,7 @@ export function usePasswordProtection({
   const participantNonces = useRef<Map<string, string>>(new Map());
 
   const setupPasswordListener = useCallback((peerId: string, dataConnection: DataConnection) => {
-    const isPasswordProtected = passwordService.isPasswordProtected(sessionPassword);
+    const isPasswordProtected = passwordService.isPasswordProtected(sessionSecret);
     const hostOrigin = window.location.origin;
     let hasJoinRequest = false;
     let isResolved = false;
@@ -132,11 +132,11 @@ export function usePasswordProtection({
 
       if (data.payload?.proof) {
         const nonce = participantNonces.current.get(peerId);
-        if (!nonce || !sessionPassword) {
-          console.warn('[PasswordProtection] Missing nonce or session password for proof verification');
+        if (!nonce || !sessionSecret) {
+          console.warn('[PasswordProtection] Missing nonce or session secret for proof verification');
         } else {
           try {
-            const expectedProof = await hmacSha256(sessionPassword, nonce);
+            const expectedProof = await hmacSha256(sessionSecret, nonce);
             isValid = expectedProof === data.payload.proof;
           } catch (error) {
             console.error('[PasswordProtection] Failed to verify HMAC proof:', error);
@@ -215,7 +215,7 @@ export function usePasswordProtection({
         markRejected();
       }
     });
-  }, [sessionPassword, domainPolicy, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
+  }, [sessionSecret, domainPolicy, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
 
   return {
     setupPasswordListener

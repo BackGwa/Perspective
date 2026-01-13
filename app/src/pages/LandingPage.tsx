@@ -28,7 +28,6 @@ import { PasswordInput } from '../components/shared/PasswordInput';
 import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
 import { ERROR_MESSAGES, PEER_CONFIG, PEER_SERVER_CONFIG } from '../config/constants';
-import { hashPassword } from '../utils/passwordHasher';
 import type { DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
 import { isValidPasswordMessage } from '../types/password.types';
@@ -39,7 +38,7 @@ export function LandingPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const {
-        setSessionPassword,
+        setSessionSecret,
         setParticipantPeer,
         setRemoteStream,
         setConnectionStatus,
@@ -288,11 +287,11 @@ export function LandingPage() {
             setError(null);
             console.log(`[LandingPage] Starting capture for: ${source}`);
 
-            // Save password to context (empty string = public room)
+            // Save session secret to context (empty string = public room)
             const trimmedPassword = hostPassword.trim();
-            const hashedPassword = trimmedPassword ? await hashPassword(trimmedPassword) : null;
-            setSessionPassword(hashedPassword);
-            console.log('[LandingPage] Password set:', hashedPassword ? 'Protected' : 'Public');
+            const sessionSecret = trimmedPassword ? trimmedPassword : null;
+            setSessionSecret(sessionSecret);
+            console.log('[LandingPage] Session secret set:', sessionSecret ? 'Protected' : 'Public');
 
             const stream = await startCapture(source);
             console.log('[LandingPage] Capture successful, stream:', stream);

@@ -21,8 +21,8 @@ interface StreamContextType {
   remoteStream: MediaStream | null;
   setRemoteStream: (stream: MediaStream | null) => void;
 
-  sessionPassword: string | null;
-  setSessionPassword: (password: string | null) => void;
+  sessionSecret: string | null;
+  setSessionSecret: (secret: string | null) => void;
 
   sessionDomainPolicy: DomainPolicy;
   setSessionDomainPolicy: (policy: DomainPolicy) => void;
@@ -47,7 +47,7 @@ export function StreamProvider({ children }: { children: ReactNode }) {
   const [peerId, setPeerId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [sessionPassword, setSessionPassword] = useState<string | null>(null);
+  const [sessionSecret, setSessionSecret] = useState<string | null>(null);
   const [sessionDomainPolicy, setSessionDomainPolicy] = useState<DomainPolicy>('same-domain');
   const [participantPeer, setParticipantPeer] = useState<Peer | null>(null);
 
@@ -105,8 +105,8 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         setConnectionStatus,
         remoteStream,
         setRemoteStream,
-        sessionPassword,
-        setSessionPassword,
+        sessionSecret,
+        setSessionSecret,
         sessionDomainPolicy,
         setSessionDomainPolicy,
         participantPeer,

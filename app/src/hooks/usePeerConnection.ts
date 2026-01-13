@@ -28,7 +28,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     connectionStatus,
     setConnectionStatus,
     setRemoteStream,
-    sessionPassword,
+    sessionSecret,
     sessionDomainPolicy
   } = useStreamContext();
 
@@ -71,7 +71,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   }, []);
 
   const { setupPasswordListener } = usePasswordProtection({
-    sessionPassword,
+    sessionSecret,
     domainPolicy: sessionDomainPolicy,
     currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
     onParticipantApproved: handleParticipantApproved,
