@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DataConnection } from 'peerjs';
+import type { DataConnection } from 'peerjs';
 import { ERROR_MESSAGES, PASSWORD_CONFIG } from '../config/constants';
 import { PASSWORD_VERIFICATION } from '../config/uiText';
 import type { PasswordMessage } from '../types/password.types';

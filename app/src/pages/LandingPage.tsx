@@ -31,7 +31,7 @@ import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
 import { ERROR_MESSAGES } from '../config/constants';
 import { hashPassword } from '../utils/passwordHasher';
 import type { DataConnection } from 'peerjs';
-import Peer from 'peerjs';
+import type Peer from 'peerjs';
 import { isValidPasswordMessage } from '../types/password.types';
 import type { SessionJoinRequestMessage } from '../types/session.types';
 import { isSessionJoinRejectedMessage } from '../types/session.types';

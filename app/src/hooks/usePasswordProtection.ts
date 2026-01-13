@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { DataConnection } from 'peerjs';
+import type { DataConnection } from 'peerjs';
 import { peerService } from '../services/peerService';
 import { passwordService } from '../services/passwordService';
 import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';

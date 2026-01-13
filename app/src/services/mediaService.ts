@@ -17,11 +17,28 @@ class MediaService {
   private sourceType: MediaSourceType | null = null;
   private currentFacingMode: CameraFacingMode = 'user';
   private availableCameras: MediaDeviceInfo[] = [];
+  private lastCameraQueryAt: number | null = null;
+  private hasDeviceChangeListener = false;
+  private readonly devicesCacheTtlMs = 5000;
 
   async getAvailableCameras(): Promise<MediaDeviceInfo[]> {
     try {
+      if (!this.hasDeviceChangeListener && navigator.mediaDevices?.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', () => {
+          this.availableCameras = [];
+          this.lastCameraQueryAt = null;
+        });
+        this.hasDeviceChangeListener = true;
+      }
+
+      const now = Date.now();
+      if (this.lastCameraQueryAt && now - this.lastCameraQueryAt < this.devicesCacheTtlMs) {
+        return this.availableCameras;
+      }
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+      this.lastCameraQueryAt = now;
       return this.availableCameras;
     } catch (error) {
       console.warn('Failed to enumerate devices:', error);

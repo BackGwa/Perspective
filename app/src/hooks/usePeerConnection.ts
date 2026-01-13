@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { MediaConnection, DataConnection } from 'peerjs';
+import type { MediaConnection, DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
 import type { MediaSourceType } from '../types/media.types';
 import { peerService } from '../services/peerService';

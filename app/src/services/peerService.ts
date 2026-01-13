@@ -1,4 +1,4 @@
-import Peer, { MediaConnection, DataConnection } from 'peerjs';
+import Peer, { type MediaConnection, type DataConnection } from 'peerjs';
 import { PEER_CONFIG, PEER_SERVER_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PeerRole } from '../types/peer.types';
 
