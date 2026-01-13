@@ -21,7 +21,7 @@ sequenceDiagram
     MS->>MS: getUserMedia/getDisplayMedia
     MS->>MS: applyVideoContentHint(motion|detail)
     MS-->>HostLP: MediaStream
-    HostLP->>SC: setStream(stream), setSessionPassword(hash|empty), setSessionDomainPolicy(same-domain|all-domains)
+    HostLP->>SC: setStream(stream), setSessionSecret(password|empty), setSessionDomainPolicy(same-domain|all-domains)
     HostLP->>HostPage: navigate(/host)
 
     HostPage->>PS: initializePeer('host')
@@ -40,7 +40,7 @@ sequenceDiagram
     else Domain ok
         alt Password protected
             PS-->>PartLP: PASSWORD_REQUEST(nonce, algorithm)
-            PartLP->>PartLP: hashPassword + HMAC(nonce)
+            PartLP->>PartLP: HMAC(password, nonce)
             PartLP->>PS: PASSWORD_RESPONSE(proof)
             PS-->>PartLP: PASSWORD_APPROVED
         else Public room
@@ -65,7 +65,7 @@ sequenceDiagram
     participant Part as LandingPage (Participant)
     participant PwdV as usePasswordVerification
 
-    Host->>SC: setSessionPassword(hash|empty), setSessionDomainPolicy(same-domain|all-domains)
+    Host->>SC: setSessionSecret(password|empty), setSessionDomainPolicy(same-domain|all-domains)
     Part->>PwdH: data connection opened
     Part->>PwdH: SESSION_JOIN_REQUEST(origin)
     PwdH->>PwdH: check domain policy
@@ -81,8 +81,7 @@ sequenceDiagram
         else Password protected
             PwdH-->>Part: PASSWORD_REQUEST(nonce, algorithm)
             Part->>PwdV: submitPassword()
-            PwdV->>PwdV: hashPassword(input)
-            PwdV->>PwdV: hmacSha256(hash, nonce)
+            PwdV->>PwdV: hmacSha256(password, nonce)
             PwdV-->>PwdH: PASSWORD_RESPONSE(proof)
             PwdH->>PwdH: verifyProof(proof, nonce)
             alt Valid
@@ -102,7 +101,7 @@ sequenceDiagram
 ### 1. Start Host Share
 ```mermaid
 flowchart TD
-    A[Host selects Share Camera/Screen] --> B["setSessionPassword(hash or empty)"]
+    A[Host selects Share Camera/Screen] --> B["setSessionSecret(password or empty)"]
     B --> C["setSessionDomainPolicy(same-domain|all-domains)"]
     C --> D["startCapture(camera or screen)"]
     D --> E{Source type?}
@@ -138,7 +137,7 @@ flowchart TD
 
     J -->|No| K[Receive PASSWORD_APPROVED]
     J -->|Yes| L["Show password input (nonce)"]
-    L --> M["hashPassword + HMAC(nonce) -> PASSWORD_RESPONSE(proof)"]
+    L --> M["HMAC(password, nonce) -> PASSWORD_RESPONSE(proof)"]
     M --> N{Approved?}
     N -->|No| O[Show error / retry]
     N -->|Yes| K
