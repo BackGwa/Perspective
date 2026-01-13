@@ -607,7 +607,7 @@ export function LandingPage() {
     };
 
     return (
-        <div className="landing-page" ref={landingPageRef}>
+        <main className="landing-page" ref={landingPageRef}>
             <div className="landing-page__left" ref={leftPanelRef}>
                 <div className="hero-container">
                     {joinMode === 'qr' && menuState === 'join' ? (
@@ -620,7 +620,7 @@ export function LandingPage() {
                             style={{ objectFit: 'cover' }}
                         />
                     ) : (
-                        <img src={heroImage} className="hero-bg" draggable="false" />
+                        <img src={heroImage} alt="" className="hero-bg" draggable="false" />
                     )}
                     {!(joinMode === 'qr' && menuState === 'join') && (
                         <div className="brand-title" ref={brandTitleRef}>
@@ -829,6 +829,6 @@ export function LandingPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }
