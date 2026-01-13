@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useAspectFit } from '../../hooks/useAspectFit';
 import '../../../styles/components/host.scss';
 
 interface LocalPreviewProps {
@@ -8,6 +9,8 @@ interface LocalPreviewProps {
 
 export function LocalPreview({ stream }: LocalPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { frameStyle, setAspect } = useAspectFit(containerRef);
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -15,9 +18,15 @@ export function LocalPreview({ stream }: LocalPreviewProps) {
     }
   }, [stream]);
 
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+
+    setAspect(videoRef.current.videoWidth, videoRef.current.videoHeight);
+  };
+
   if (!stream) {
     return (
-      <div className="local-preview">
+      <div ref={containerRef} className="local-preview">
         <div className="local-preview__placeholder">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -36,14 +45,17 @@ export function LocalPreview({ stream }: LocalPreviewProps) {
   }
 
   return (
-    <div className="local-preview">
-      <video
-        ref={videoRef}
-        className="local-preview__video"
-        autoPlay
-        playsInline
-        muted
-      />
+    <div ref={containerRef} className="local-preview">
+      <div className="local-preview__frame" style={frameStyle}>
+        <video
+          ref={videoRef}
+          className="local-preview__video"
+          autoPlay
+          playsInline
+          muted
+          onLoadedMetadata={handleLoadedMetadata}
+        />
+      </div>
     </div>
   );
 }

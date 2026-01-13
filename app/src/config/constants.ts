@@ -93,6 +93,10 @@ export const APP_CONFIG = {
   RECONNECT_ATTEMPTS: connectionSettings.attempts
 } as const;
 
+export const UI_TIMING = {
+  CONTROLS_OVERLAY_DISPLAY_DURATION: 2500
+} as const;
+
 export const ERROR_MESSAGES = {
   PERMISSION_DENIED: 'Permission to access camera/screen was denied. Please allow access to continue.',
   BROWSER_NOT_SUPPORTED: 'Your browser does not support WebRTC. Please use a modern browser.',

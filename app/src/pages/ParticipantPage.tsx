@@ -4,6 +4,7 @@ import { RemoteStream } from '../components/participant/RemoteStream';
 import { ParticipantControls } from '../components/participant/ParticipantControls';
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { useStreamContext } from '../contexts/StreamContext';
+import { useControlsOverlay } from '../hooks/useControlsOverlay';
 import { ERROR_MESSAGES } from '../config/constants';
 import { cleanupParticipantPeer } from '../utils/peerCleanup';
 import { navigateWithError } from '../utils/navigationHelpers';
@@ -15,6 +16,8 @@ export function ParticipantPage() {
   const hostPeerId = searchParams.get('peer');
   const [isMuted, setIsMuted] = useState(true);
   const isLeavingRef = useRef(false);
+  const controlsOverlayRef = useRef<HTMLDivElement>(null);
+  const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
 
   const { connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer } = useStreamContext();
 
@@ -93,7 +96,7 @@ export function ParticipantPage() {
   if (!hostPeerId) return null;
 
   return (
-    <div className="participant-page">
+    <div className={`participant-page ${isOverlayVisible ? 'participant-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <RemoteStream
         stream={remoteStream}
         isConnecting={isConnecting}
@@ -102,6 +105,8 @@ export function ParticipantPage() {
       {!isConnecting && remoteStream && (
         <ParticipantControls
           isMuted={isMuted}
+          isOverlayVisible={isOverlayVisible}
+          overlayRef={controlsOverlayRef}
           shareLink={getShareLink() || ''}
           onToggleAudio={handleToggleAudio}
           onLeave={handleLeave}

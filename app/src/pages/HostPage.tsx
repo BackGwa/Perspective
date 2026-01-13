@@ -4,6 +4,7 @@ import { LocalPreview } from '../components/host/LocalPreview';
 import { HostControls } from '../components/host/HostControls';
 import { useMediaStream } from '../hooks/useMediaStream';
 import { usePeerConnection } from '../hooks/usePeerConnection';
+import { useControlsOverlay } from '../hooks/useControlsOverlay';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { navigateWithError } from '../utils/navigationHelpers';
 import { TIMING } from '../config/timing';
@@ -14,6 +15,8 @@ export function HostPage() {
   const location = useLocation();
   const [isWaitingForStream, setIsWaitingForStream] = useState(false);
   const hasNavigatedRef = useRef(false);
+  const controlsOverlayRef = useRef<HTMLDivElement>(null);
+  const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
 
   const {
     stream,
@@ -155,11 +158,13 @@ export function HostPage() {
   }
 
   return (
-    <div className="host-page">
+    <div className={`host-page ${isOverlayVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <LocalPreview stream={stream} sourceType={sourceType} />
       <HostControls
         isPaused={isPaused}
         isMuted={isMuted}
+        isOverlayVisible={isOverlayVisible}
+        overlayRef={controlsOverlayRef}
         shareLink={getShareLink() || ''}
         sourceType={sourceType}
         canSwitchCamera={canSwitchCamera}

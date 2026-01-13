@@ -46,7 +46,7 @@
 @media (max-width: $breakpoint-desktop) {
   .client-count-badge {
     // Reset position to prevent height changes on mobile
-    bottom: calc(100% + var(--spacing-sm));
+    bottom: calc(100% + var(--spacing-md));
     padding: var(--spacing-xxs) var(--spacing-sm);
     font-size: var(--font-size-xxs);
   }
