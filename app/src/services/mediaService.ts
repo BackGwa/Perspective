@@ -95,10 +95,6 @@ class MediaService {
       applyVideoContentHint(stream.getVideoTracks()[0], 'detail');
       this.currentStream = stream;
 
-      stream.getVideoTracks()[0].addEventListener('ended', () => {
-        this.stopStream();
-      });
-
       return stream;
     } catch (error) {
       throw this.handleMediaError(error);
