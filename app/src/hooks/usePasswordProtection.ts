@@ -5,9 +5,12 @@ import { passwordService } from '../services/passwordService';
 import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PasswordMessage } from '../types/password.types';
 import { isValidPasswordMessage } from '../types/password.types';
+import type { DomainPolicy, SessionJoinRejectedMessage } from '../types/session.types';
+import { isSessionJoinRequestMessage } from '../types/session.types';
 
 interface UsePasswordProtectionOptions {
   sessionPassword: string | null;
+  domainPolicy: DomainPolicy;
   currentParticipantCount: number;
   onParticipantApproved?: (peerId: string) => void;
   onParticipantRejected?: (peerId: string) => void;
@@ -15,6 +18,7 @@ interface UsePasswordProtectionOptions {
 
 export function usePasswordProtection({
   sessionPassword,
+  domainPolicy,
   currentParticipantCount,
   onParticipantApproved,
   onParticipantRejected
@@ -28,9 +32,42 @@ export function usePasswordProtection({
 
   const setupPasswordListener = useCallback((peerId: string, dataConnection: DataConnection) => {
     const isPasswordProtected = passwordService.isPasswordProtected(sessionPassword);
+    const hostOrigin = window.location.origin;
+    let hasJoinRequest = false;
+    let isResolved = false;
 
-    // Wait a bit to ensure participant's listener is ready
-    setTimeout(() => {
+    const markRejected = () => {
+      if (isResolved) return;
+      isResolved = true;
+      onParticipantRejected?.(peerId);
+    };
+
+    const approveParticipant = () => {
+      if (isResolved) return;
+      isResolved = true;
+      approvedParticipants.current.add(peerId);
+      participantRetries.current.delete(peerId);
+      onParticipantApproved?.(peerId);
+    };
+
+    const rejectForDomain = () => {
+      const rejectionMessage: SessionJoinRejectedMessage = {
+        type: 'SESSION_JOIN_REJECTED',
+        payload: {
+          reason: ERROR_MESSAGES.DOMAIN_NOT_ALLOWED
+        }
+      };
+      peerService.sendDataMessage(peerId, rejectionMessage);
+      markRejected();
+
+      setTimeout(() => {
+        dataConnection.close();
+      }, 100);
+    };
+
+    const startPasswordFlow = () => {
+      if (isResolved) return;
+
       // Check if max participants limit is exceeded
       if (currentParticipantCount >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
         console.log('[PasswordProtection] Max participants exceeded. Current:', currentParticipantCount, 'Max:', PARTICIPANT_CONFIG.MAX_PARTICIPANTS);
@@ -42,9 +79,8 @@ export function usePasswordProtection({
           }
         };
         peerService.sendDataMessage(peerId, rejectionMessage);
-        onParticipantRejected?.(peerId);
+        markRejected();
 
-        // Close the data connection
         setTimeout(() => {
           dataConnection.close();
         }, 100);
@@ -52,32 +88,50 @@ export function usePasswordProtection({
       }
 
       if (!isPasswordProtected) {
-        // Public room - approve immediately and send approval message
-        approvedParticipants.current.add(peerId);
-
-        // Send approval message for public room
         const approvalMessage: PasswordMessage = {
           type: 'PASSWORD_APPROVED',
           payload: {}
         };
         peerService.sendDataMessage(peerId, approvalMessage);
-
-        onParticipantApproved?.(peerId);
+        approveParticipant();
         return;
       }
 
-      // Send password request
       const requestMessage: PasswordMessage = {
         type: 'PASSWORD_REQUEST',
         payload: {}
       };
       peerService.sendDataMessage(peerId, requestMessage);
-    }, 100);
+    };
 
-    // Listen for password response
+    const handleJoinRequest = (origin: string) => {
+      if (hasJoinRequest || isResolved) return;
+      hasJoinRequest = true;
+
+      if (domainPolicy === 'same-domain' && origin !== hostOrigin) {
+        rejectForDomain();
+        return;
+      }
+
+      // Wait a bit to ensure participant's listener is ready
+      setTimeout(() => {
+        startPasswordFlow();
+      }, 100);
+    };
+
     dataConnection.on('data', (data: unknown) => {
+      if (isSessionJoinRequestMessage(data)) {
+        handleJoinRequest(data.payload.origin);
+        return;
+      }
+
       if (!isValidPasswordMessage(data)) {
         console.warn('[PasswordProtection] Invalid message received:', data);
+        return;
+      }
+
+      if (!hasJoinRequest) {
+        console.warn('[PasswordProtection] Password response received before join request:', data);
         return;
       }
 
@@ -91,17 +145,12 @@ export function usePasswordProtection({
         const isValid = passwordService.verifyPassword(providedPassword, sessionPassword || '');
 
         if (isValid) {
-          // Password correct - approve participant and add to approved list
-          approvedParticipants.current.add(peerId);
-          participantRetries.current.delete(peerId);
-
           const approvalMessage: PasswordMessage = {
             type: 'PASSWORD_APPROVED',
             payload: {}
           };
           peerService.sendDataMessage(peerId, approvalMessage);
-
-          onParticipantApproved?.(peerId);
+          approveParticipant();
         } else {
           // Password incorrect - increment retry count
           const newRetryCount = currentRetries + 1;
@@ -119,10 +168,8 @@ export function usePasswordProtection({
               }
             };
             peerService.sendDataMessage(peerId, rejectionMessage);
+            markRejected();
 
-            onParticipantRejected?.(peerId);
-
-            // Close the data connection
             setTimeout(() => {
               dataConnection.close();
             }, 100);
@@ -140,7 +187,13 @@ export function usePasswordProtection({
         }
       }
     });
-  }, [sessionPassword, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
+
+    dataConnection.on('close', () => {
+      if (!isResolved && !approvedParticipants.current.has(peerId)) {
+        markRejected();
+      }
+    });
+  }, [sessionPassword, domainPolicy, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
 
   const resetParticipantRetries = useCallback((peerId: string) => {
     participantRetries.current.delete(peerId);

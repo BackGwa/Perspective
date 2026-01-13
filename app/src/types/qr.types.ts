@@ -7,7 +7,6 @@ export interface QRScanResult {
 
 export type QRValidationError =
   | 'INVALID_FORMAT'
-  | 'DOMAIN_MISMATCH'
   | 'MISSING_PEER_ID'
   | 'MALFORMED_URL';
 

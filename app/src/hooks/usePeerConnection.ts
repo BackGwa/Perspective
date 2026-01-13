@@ -28,7 +28,8 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     connectionStatus,
     setConnectionStatus,
     setRemoteStream,
-    sessionPassword
+    sessionPassword,
+    sessionDomainPolicy
   } = useStreamContext();
 
   const participantsRef = useRef<Map<string, MediaConnection>>(new Map());
@@ -72,6 +73,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
 
   const { setupPasswordListener, isPasswordProtected } = usePasswordProtection({
     sessionPassword,
+    domainPolicy: sessionDomainPolicy,
     currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
     onParticipantApproved: handleParticipantApproved,
     onParticipantRejected: handleParticipantRejected

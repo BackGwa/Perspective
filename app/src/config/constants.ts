@@ -119,6 +119,7 @@ export const ERROR_MESSAGES = {
   CONNECTION_TIMED_OUT: 'Connection timed out',
   COULD_NOT_CONNECT_TO_HOST: 'Could not connect to host',
   CONNECTION_CLOSED_IMMEDIATELY: 'Connection closed immediately',
+  DOMAIN_NOT_ALLOWED: 'This session only allows participants from the host\'s domain.',
   CAMERA_SWITCHING_ONLY_AVAILABLE: 'Camera switching is only available in camera mode',
   PASSWORD_TOO_SHORT: 'Password must be at least4 characters.',
   PASSWORD_TOO_LONG: 'Password cannot exceed 32 characters.',
