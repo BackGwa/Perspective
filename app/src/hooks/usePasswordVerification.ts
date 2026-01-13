@@ -3,7 +3,7 @@ import type { DataConnection } from 'peerjs';
 import { ERROR_MESSAGES, PASSWORD_CONFIG } from '../config/constants';
 import { PASSWORD_VERIFICATION } from '../config/uiText';
 import type { PasswordMessage } from '../types/password.types';
-import { hashPassword, hmacSha256 } from '../utils/passwordHasher';
+import { hmacSha256 } from '../utils/passwordCrypto';
 
 interface UsePasswordVerificationOptions {
   dataConnection: DataConnection | null;
@@ -97,7 +97,6 @@ export function usePasswordVerification({
     setIsVerifying(true);
     setErrorMessage(null);
 
-    const hashedPassword = await hashPassword(password);
     const nonce = nonceRef.current;
     if (!nonce) {
       console.error('[PasswordVerification] Missing nonce for password proof');
@@ -108,7 +107,7 @@ export function usePasswordVerification({
 
     let payload: PasswordMessage['payload'];
     try {
-      const proof = await hmacSha256(hashedPassword, nonce);
+      const proof = await hmacSha256(password, nonce);
       payload = {
         proof,
         algorithm: 'hmac-sha256'
