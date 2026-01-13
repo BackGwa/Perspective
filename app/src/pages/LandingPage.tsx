@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../../styles/pages/landing.scss';
-import heroImage from '../../assets/hero-image.png';
+import heroImage from '../../assets/hero-image.webp';
 import brandTitleImage from '../../assets/brand-title.png';
 import {
     IconShare,
