@@ -217,6 +217,6 @@ flowchart TD
     I --> J["ConnectionStatus: idle"]
     J --> K[Redirect to LandingPage]
 
-    B -->|Screen share ended| L[Video track ended event]
+    B -->|Screen or camera share ended| L[Video track ended event]
     L --> D
 ```

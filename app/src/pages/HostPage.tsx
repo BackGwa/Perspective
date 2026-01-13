@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LocalPreview } from '../components/host/LocalPreview';
 import { HostControls } from '../components/host/HostControls';
@@ -16,6 +16,13 @@ export function HostPage() {
   const [isWaitingForStream, setIsWaitingForStream] = useState(false);
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
+  const disconnectRef = useRef<() => void>();
+  const handleStreamEnded = useCallback(() => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+    disconnectRef.current?.();
+    navigate('/');
+  }, [navigate]);
   const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
 
   const {
@@ -29,11 +36,10 @@ export function HostPage() {
     toggleVideo,
     toggleAudio,
     switchCamera
-  } = useMediaStream();
+  } = useMediaStream({ onStreamEnded: handleStreamEnded });
 
   // Store latest functions in refs for cleanup
   const stopCaptureRef = useRef(stopCapture);
-  const disconnectRef = useRef<() => void>();
 
   useEffect(() => {
     stopCaptureRef.current = stopCapture;
