@@ -99,26 +99,25 @@ export function usePasswordVerification({
 
     const hashedPassword = await hashPassword(password);
     const nonce = nonceRef.current;
-    let payload: PasswordMessage['payload'];
+    if (!nonce) {
+      console.error('[PasswordVerification] Missing nonce for password proof');
+      setIsVerifying(false);
+      setErrorMessage(ERROR_MESSAGES.CONNECTION_ERROR);
+      return;
+    }
 
-    if (nonce) {
-      try {
-        const proof = await hmacSha256(hashedPassword, nonce);
-        payload = {
-          proof,
-          algorithm: 'hmac-sha256'
-        };
-      } catch (error) {
-        console.error('[PasswordVerification] Failed to create HMAC proof:', error);
-        setIsVerifying(false);
-        setErrorMessage(ERROR_MESSAGES.CONNECTION_ERROR);
-        return;
-      }
-    } else {
-      // Legacy fallback when no nonce is provided
+    let payload: PasswordMessage['payload'];
+    try {
+      const proof = await hmacSha256(hashedPassword, nonce);
       payload = {
-        password: hashedPassword
+        proof,
+        algorithm: 'hmac-sha256'
       };
+    } catch (error) {
+      console.error('[PasswordVerification] Failed to create HMAC proof:', error);
+      setIsVerifying(false);
+      setErrorMessage(ERROR_MESSAGES.CONNECTION_ERROR);
+      return;
     }
 
     const responseMessage: PasswordMessage = {

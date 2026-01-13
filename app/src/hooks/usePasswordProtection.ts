@@ -142,9 +142,6 @@ export function usePasswordProtection({
             console.error('[PasswordProtection] Failed to verify HMAC proof:', error);
           }
         }
-      } else if (data.payload?.password) {
-        // Legacy fallback for clients that do not support HMAC proof
-        isValid = passwordService.verifyPassword(data.payload.password, sessionPassword || '');
       } else {
         console.warn('[PasswordProtection] Missing password proof');
       }
