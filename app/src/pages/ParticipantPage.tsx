@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { RemoteStream } from '../components/participant/RemoteStream';
 import { ParticipantControls } from '../components/participant/ParticipantControls';
@@ -14,6 +14,7 @@ export function ParticipantPage() {
   const navigate = useNavigate();
   const hostPeerId = searchParams.get('peer');
   const [isMuted, setIsMuted] = useState(true);
+  const isLeavingRef = useRef(false);
 
   const { connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer } = useStreamContext();
 
@@ -25,6 +26,7 @@ export function ParticipantPage() {
     }
 
     if (!participantPeer) {
+      if (isLeavingRef.current) return;
       console.log('[ParticipantPage] No existing peer, redirecting to landing page for password verification');
       // Redirect to landing page with session ID for password verification
       navigate('/', {
@@ -67,6 +69,7 @@ export function ParticipantPage() {
 
 
   const handleLeave = () => {
+    isLeavingRef.current = true;
     setParticipantPeer(cleanupParticipantPeer(participantPeer));
     setRemoteStream(null);
     setConnectionStatus('idle');
