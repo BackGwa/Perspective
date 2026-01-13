@@ -36,7 +36,6 @@ const StreamContext = createContext<StreamContextType | undefined>(undefined);
 
 const initialStreamState: StreamState = {
   stream: null,
-  isActive: false,
   isPaused: false,
   isMuted: false,
   sourceType: null,
@@ -59,7 +58,6 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         ...prev,
         stream,
         sourceType,
-        isActive: stream !== null,
         error: null
       };
       console.log('[StreamContext] New state:', newState);

@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { DataConnection } from 'peerjs';
+import type { DataConnection } from 'peerjs';
 import { peerService } from '../services/peerService';
 import { passwordService } from '../services/passwordService';
 import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';
@@ -25,10 +25,6 @@ export function usePasswordProtection({
 }: UsePasswordProtectionOptions) {
   const participantRetries = useRef<Map<string, number>>(new Map());
   const approvedParticipants = useRef<Set<string>>(new Set());
-
-  const isParticipantApproved = useCallback((peerId: string): boolean => {
-    return approvedParticipants.current.has(peerId);
-  }, []);
 
   const setupPasswordListener = useCallback((peerId: string, dataConnection: DataConnection) => {
     const isPasswordProtected = passwordService.isPasswordProtected(sessionPassword);
@@ -195,17 +191,7 @@ export function usePasswordProtection({
     });
   }, [sessionPassword, domainPolicy, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
 
-  const resetParticipantRetries = useCallback((peerId: string) => {
-    participantRetries.current.delete(peerId);
-    approvedParticipants.current.delete(peerId);
-  }, []);
-
-  const isPasswordProtected = passwordService.isPasswordProtected(sessionPassword);
-
   return {
-    setupPasswordListener,
-    isParticipantApproved,
-    resetParticipantRetries,
-    isPasswordProtected
+    setupPasswordListener
   };
 }

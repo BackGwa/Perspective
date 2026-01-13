@@ -73,26 +73,6 @@ export const SCREEN_CONSTRAINTS: MediaConstraints = {
   audio: true
 };
 
-const getConnectionSettings = () => {
-  const timeout = import.meta.env.VITE_CONNECTION_TIMEOUT;
-  const attempts = import.meta.env.VITE_RECONNECT_ATTEMPTS;
-
-  return {
-    timeout: timeout ? parseInt(timeout, 10) : 30,
-    attempts: attempts ? parseInt(attempts, 10) : 3
-  };
-};
-
-const connectionSettings = getConnectionSettings();
-
-export const APP_CONFIG = {
-  APP_NAME: 'Perspective',
-  APP_DESCRIPTION: 'Share your perspective with others',
-  SHARE_PATH: '/share',
-  CONNECTION_TIMEOUT: connectionSettings.timeout,
-  RECONNECT_ATTEMPTS: connectionSettings.attempts
-} as const;
-
 export const UI_TIMING = {
   CONTROLS_OVERLAY_DISPLAY_DURATION: 2500
 } as const;
@@ -125,7 +105,7 @@ export const ERROR_MESSAGES = {
   CONNECTION_CLOSED_IMMEDIATELY: 'Connection closed immediately',
   DOMAIN_NOT_ALLOWED: 'This session only allows participants from the host\'s domain.',
   CAMERA_SWITCHING_ONLY_AVAILABLE: 'Camera switching is only available in camera mode',
-  PASSWORD_TOO_SHORT: 'Password must be at least4 characters.',
+  PASSWORD_TOO_SHORT: 'Password must be at least 4 characters.',
   PASSWORD_TOO_LONG: 'Password cannot exceed 32 characters.',
   SESSION_ENDED: 'Session ended by host.'
 } as const;

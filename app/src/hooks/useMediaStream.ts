@@ -108,7 +108,6 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
   return {
     stream: streamState.stream,
     sourceType: streamState.sourceType,
-    isActive: streamState.isActive,
     isPaused: streamState.isPaused,
     isMuted: streamState.isMuted,
     error: streamState.error,

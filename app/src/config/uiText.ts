@@ -9,7 +9,6 @@ export const LANDING_MENU = {
 
 export const JOIN_FLOW = {
   ENTER_SESSION_ID: 'Enter Session ID',
-  SCAN_QR_CODE: 'Scan QR Code',
   JOIN_SESSION: 'Join Session',
   ENTER_MANUALLY: 'Enter Manually',
   JOIN_WITH_QR: 'Join with QR',

@@ -2,20 +2,49 @@ import jsQR from 'jsqr';
 import type { QRScanResult } from '../types/qr.types';
 import { validateQRCodeURL, getQRErrorMessage } from './urlValidator';
 
-export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
+const canvasCache = new WeakMap<HTMLVideoElement, { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D }>();
+
+const getCanvasContext = (video: HTMLVideoElement) => {
+  const cached = canvasCache.get(video);
+  if (cached) {
+    return cached;
+  }
+
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
-
   if (!context) {
     return null;
   }
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  const entry = { canvas, context };
+  canvasCache.set(video, entry);
+  return entry;
+};
 
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+export function scanVideoFrame(video: HTMLVideoElement): QRScanResult | null {
+  const entry = getCanvasContext(video);
+  if (!entry) {
+    return null;
+  }
 
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const { canvas, context } = entry;
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+
+  if (!width || !height) {
+    return null;
+  }
+
+  if (canvas.width !== width) {
+    canvas.width = width;
+  }
+  if (canvas.height !== height) {
+    canvas.height = height;
+  }
+
+  context.drawImage(video, 0, 0, width, height);
+
+  const imageData = context.getImageData(0, 0, width, height);
 
   const code = jsQR(imageData.data, imageData.width, imageData.height, {
     inversionAttempts: 'dontInvert',

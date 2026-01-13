@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { MediaConnection, DataConnection } from 'peerjs';
+import { useCallback, useEffect, useRef } from 'react';
+import type { MediaConnection, DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
 import type { MediaSourceType } from '../types/media.types';
 import { peerService } from '../services/peerService';
@@ -37,7 +37,6 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   const pendingPasswordApprovalRef = useRef<Set<string>>(new Set());
   const streamRef = useRef<MediaStream | null>(stream || null);
   const hasInitialized = useRef(false);
-  const [dataConnection, setDataConnection] = useState<DataConnection | null>(null);
 
   useEffect(() => {
     streamRef.current = stream || null;
@@ -71,7 +70,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     pendingPasswordApprovalRef.current.delete(participantId);
   }, []);
 
-  const { setupPasswordListener, isPasswordProtected } = usePasswordProtection({
+  const { setupPasswordListener } = usePasswordProtection({
     sessionPassword,
     domainPolicy: sessionDomainPolicy,
     currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
@@ -175,9 +174,8 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
         setConnectionStatus('connecting');
 
         peerService.connectToPeer(hostPeerId)
-          .then((dataConn) => {
+          .then(() => {
             console.log('Connected to host, waiting for call...');
-            setDataConnection(dataConn);
           })
           .catch((error) => {
             console.error('Failed to connect to host:', error);
@@ -300,8 +298,6 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     connectionStatus,
     disconnect,
     getShareLink,
-    participantCount: participantsRef.current.size,
-    dataConnection,
-    isPasswordProtected: role === 'host' ? isPasswordProtected : false
+    participantCount: participantsRef.current.size
   };
 }
