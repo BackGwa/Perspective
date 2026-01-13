@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { RemoteStream } from '../components/participant/RemoteStream';
 import { ParticipantControls } from '../components/participant/ParticipantControls';
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { useStreamContext } from '../contexts/StreamContext';
+import { useControlsOverlay } from '../hooks/useControlsOverlay';
 import { ERROR_MESSAGES } from '../config/constants';
 import { cleanupParticipantPeer } from '../utils/peerCleanup';
 import { navigateWithError } from '../utils/navigationHelpers';
@@ -14,6 +15,9 @@ export function ParticipantPage() {
   const navigate = useNavigate();
   const hostPeerId = searchParams.get('peer');
   const [isMuted, setIsMuted] = useState(true);
+  const isLeavingRef = useRef(false);
+  const controlsOverlayRef = useRef<HTMLDivElement>(null);
+  const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
 
   const { connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer } = useStreamContext();
 
@@ -25,6 +29,7 @@ export function ParticipantPage() {
     }
 
     if (!participantPeer) {
+      if (isLeavingRef.current) return;
       console.log('[ParticipantPage] No existing peer, redirecting to landing page for password verification');
       // Redirect to landing page with session ID for password verification
       navigate('/', {
@@ -67,6 +72,7 @@ export function ParticipantPage() {
 
 
   const handleLeave = () => {
+    isLeavingRef.current = true;
     setParticipantPeer(cleanupParticipantPeer(participantPeer));
     setRemoteStream(null);
     setConnectionStatus('idle');
@@ -90,7 +96,7 @@ export function ParticipantPage() {
   if (!hostPeerId) return null;
 
   return (
-    <div className="participant-page">
+    <div className={`participant-page ${isOverlayVisible ? 'participant-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <RemoteStream
         stream={remoteStream}
         isConnecting={isConnecting}
@@ -99,6 +105,8 @@ export function ParticipantPage() {
       {!isConnecting && remoteStream && (
         <ParticipantControls
           isMuted={isMuted}
+          isOverlayVisible={isOverlayVisible}
+          overlayRef={controlsOverlayRef}
           shareLink={getShareLink() || ''}
           onToggleAudio={handleToggleAudio}
           onLeave={handleLeave}

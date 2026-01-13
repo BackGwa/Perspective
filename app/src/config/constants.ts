@@ -93,6 +93,10 @@ export const APP_CONFIG = {
   RECONNECT_ATTEMPTS: connectionSettings.attempts
 } as const;
 
+export const UI_TIMING = {
+  CONTROLS_OVERLAY_DISPLAY_DURATION: 2500
+} as const;
+
 export const ERROR_MESSAGES = {
   PERMISSION_DENIED: 'Permission to access camera/screen was denied. Please allow access to continue.',
   BROWSER_NOT_SUPPORTED: 'Your browser does not support WebRTC. Please use a modern browser.',
@@ -119,6 +123,7 @@ export const ERROR_MESSAGES = {
   CONNECTION_TIMED_OUT: 'Connection timed out',
   COULD_NOT_CONNECT_TO_HOST: 'Could not connect to host',
   CONNECTION_CLOSED_IMMEDIATELY: 'Connection closed immediately',
+  DOMAIN_NOT_ALLOWED: 'This session only allows participants from the host\'s domain.',
   CAMERA_SWITCHING_ONLY_AVAILABLE: 'Camera switching is only available in camera mode',
   PASSWORD_TOO_SHORT: 'Password must be at least4 characters.',
   PASSWORD_TOO_LONG: 'Password cannot exceed 32 characters.',

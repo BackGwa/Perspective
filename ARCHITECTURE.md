@@ -21,7 +21,7 @@ sequenceDiagram
     MS->>MS: getUserMedia/getDisplayMedia
     MS->>MS: applyVideoContentHint(motion|detail)
     MS-->>HostLP: MediaStream
-    HostLP->>SC: setStream(stream), setSessionPassword(hash|empty)
+    HostLP->>SC: setStream(stream), setSessionPassword(hash|empty), setSessionDomainPolicy(same-domain|all-domains)
     HostLP->>HostPage: navigate(/host)
 
     HostPage->>PS: initializePeer('host')
@@ -36,13 +36,19 @@ sequenceDiagram
     PartLP->>PPeer: new Peer()
     PPeer->>Server: open
     PPeer->>PS: connect(hostPeerId) (data channel)
+    PartLP->>PS: SESSION_JOIN_REQUEST(origin)
+    PS->>PS: check domain policy
 
-    alt Password protected
-        PS-->>PartLP: PASSWORD_REQUEST
-        PartLP->>PartLP: hashPassword + PASSWORD_RESPONSE
-        PS-->>PartLP: PASSWORD_APPROVED
-    else Public room
-        PS-->>PartLP: PASSWORD_APPROVED
+    alt Domain mismatch
+        PS-->>PartLP: SESSION_JOIN_REJECTED
+    else Domain ok
+        alt Password protected
+            PS-->>PartLP: PASSWORD_REQUEST
+            PartLP->>PartLP: hashPassword + PASSWORD_RESPONSE
+            PS-->>PartLP: PASSWORD_APPROVED
+        else Public room
+            PS-->>PartLP: PASSWORD_APPROVED
+        end
     end
 
     PartLP->>SC: setParticipantPeer(tempPeer)
@@ -62,26 +68,32 @@ sequenceDiagram
     participant Part as LandingPage (Participant)
     participant PwdV as usePasswordVerification
 
-    Host->>SC: setSessionPassword(hash|empty)
+    Host->>SC: setSessionPassword(hash|empty), setSessionDomainPolicy(same-domain|all-domains)
     Part->>PwdH: data connection opened
-    PwdH->>PwdH: check max participants + isPasswordProtected
+    Part->>PwdH: SESSION_JOIN_REQUEST(origin)
+    PwdH->>PwdH: check domain policy
 
-    alt Max participants
-        PwdH-->>Part: MAX_PARTICIPANTS_EXCEEDED
-    else Public room
-        PwdH-->>Part: PASSWORD_APPROVED
-    else Password protected
-        PwdH-->>Part: PASSWORD_REQUEST
-        Part->>PwdV: submitPassword()
-        PwdV->>PwdV: hashPassword(input)
-        PwdV-->>PwdH: PASSWORD_RESPONSE(hash)
-        PwdH->>PwdH: verifyPassword(hash)
-        alt Valid
+    alt Domain mismatch
+        PwdH-->>Part: SESSION_JOIN_REJECTED
+    else Domain ok
+        PwdH->>PwdH: check max participants + isPasswordProtected
+        alt Max participants
+            PwdH-->>Part: MAX_PARTICIPANTS_EXCEEDED
+        else Public room
             PwdH-->>Part: PASSWORD_APPROVED
-        else Invalid
-            PwdH-->>Part: PASSWORD_REJECTED(remainingRetries)
-            opt remainingRetries == 0
-                PwdH-->>Part: close data connection
+        else Password protected
+            PwdH-->>Part: PASSWORD_REQUEST
+            Part->>PwdV: submitPassword()
+            PwdV->>PwdV: hashPassword(input)
+            PwdV-->>PwdH: PASSWORD_RESPONSE(hash)
+            PwdH->>PwdH: verifyPassword(hash)
+            alt Valid
+                PwdH-->>Part: PASSWORD_APPROVED
+            else Invalid
+                PwdH-->>Part: PASSWORD_REJECTED(remainingRetries)
+                opt remainingRetries == 0
+                    PwdH-->>Part: close data connection
+                end
             end
         end
     end
@@ -93,22 +105,23 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     A[Host selects Share Camera/Screen] --> B["setSessionPassword(hash or empty)"]
-    B --> C["startCapture(camera or screen)"]
-    C --> D{Source type?}
-    D -->|Screen| E[getDisplayMedia]
-    D -->|Camera| F[getUserMedia]
+    B --> C["setSessionDomainPolicy(same-domain|all-domains)"]
+    C --> D["startCapture(camera or screen)"]
+    D --> E{Source type?}
+    E -->|Screen| F[getDisplayMedia]
+    E -->|Camera| G[getUserMedia]
 
-    E --> G["applyVideoContentHint(detail)"]
-    F --> H["applyVideoContentHint(motion)"]
-    G --> I[MediaStream obtained]
-    H --> I
+    F --> H["applyVideoContentHint(detail)"]
+    G --> I["applyVideoContentHint(motion)"]
+    H --> J[MediaStream obtained]
+    I --> J
 
-    I --> J[StreamContext: setStream]
-    J --> K[Navigate to HostPage]
-    K --> L[Initialize Peer]
-    L --> M[Get Peer ID]
-    M --> N[Generate QR Code & Link]
-    N --> O[Wait for Participants]
+    J --> K[StreamContext: setStream]
+    K --> L[Navigate to HostPage]
+    L --> M[Initialize Peer]
+    M --> N[Get Peer ID]
+    N --> O[Generate QR Code & Link]
+    O --> P[Wait for Participants]
 ```
 
 ### 2. Participant Connection
@@ -117,23 +130,27 @@ flowchart TD
     A[Participant scans QR or enters link] --> B[Extract Peer ID]
     B --> C["validateConnection(peerId)"]
     C --> D[Create temp Peer + data connection]
-    D --> E{Max participants?}
+    D --> E["Send SESSION_JOIN_REQUEST(origin)"]
+    E --> F{Domain allowed?}
 
-    E -->|Exceeded| F[Show error and stop]
-    E -->|Available| G{Password protected?}
+    F -->|No| G[Show error and stop]
+    F -->|Yes| H{Max participants?}
 
-    G -->|No| H[Receive PASSWORD_APPROVED]
-    G -->|Yes| I[Show password input]
-    I --> J[hashPassword + PASSWORD_RESPONSE]
-    J --> K{Approved?}
-    K -->|No| L[Show error / retry]
-    K -->|Yes| H
+    H -->|Exceeded| I[Show error and stop]
+    H -->|Available| J{Password protected?}
 
-    H --> M["StreamContext: setParticipantPeer(tempPeer)"]
-    M --> N[Navigate to ParticipantPage]
-    N --> O[Wait for host call]
-    O --> P[Receive MediaStream]
-    P --> Q[StreamContext: setRemoteStream]
+    J -->|No| K[Receive PASSWORD_APPROVED]
+    J -->|Yes| L[Show password input]
+    L --> M[hashPassword + PASSWORD_RESPONSE]
+    M --> N{Approved?}
+    N -->|No| O[Show error / retry]
+    N -->|Yes| K
+
+    K --> P["StreamContext: setParticipantPeer(tempPeer)"]
+    P --> Q[Navigate to ParticipantPage]
+    Q --> R[Wait for host call]
+    R --> S[Receive MediaStream]
+    S --> T[StreamContext: setRemoteStream]
 ```
 
 ### 3. QR Scan and URL Validation

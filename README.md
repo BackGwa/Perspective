@@ -2,8 +2,10 @@
 
 ![Perspective](.github/assets/banner.png)
 
-**Perspective** is a WebRTC-based Peer-to-Peer real-time screen and camera sharing web application.
-It enables direct client-to-client connections for sharing media streams.
+**Perspective** is a WebRTC-based Peer-to-Peer real-time screen and camera sharing web application that enables direct media stream sharing between clients.
+
+By utilizing a static client design, it ensures seamless connectivity across any hosting environment as long as standardized signaling protocols are met. This architecture maximizes technical neutrality and connection autonomy by minimizing server intervention, facilitating a purely direct exchange between users.  
+
 
 [![GitHub Contributors](https://img.shields.io/github/contributors/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/graphs/contributors)
 [![GitHub Forks](https://img.shields.io/github/forks/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/network/members)
@@ -48,18 +50,21 @@ VITE_PEERJS_PATH=
 VITE_PEERJS_SECURE=true
 VITE_STUN_SERVER_URL=
 
-# Session Configuration
-VITE_MAX_PARTICIPANTS=24
+# Session Settings
+VITE_MAX_PARTICIPANTS=128
 VITE_MAX_PASSWORD_RETRIES=3
 
-# Media Quality Configuration
+# Media Quality Settings
 VITE_MAX_RESOLUTION_WIDTH=1920
 VITE_MAX_RESOLUTION_HEIGHT=1080
 VITE_MAX_FRAMERATE=30
 
-# Connection Configuration
+# Connection Settings
 VITE_CONNECTION_TIMEOUT=30
 VITE_RECONNECT_ATTEMPTS=3
+
+# SEO Settings
+VITE_APP_DOMAIN=https://yourdomain.com/
 ```
 
 > **Note**
