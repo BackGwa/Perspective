@@ -9,6 +9,9 @@ export interface PasswordMessage {
   type: PasswordMessageType;
   payload?: {
     password?: string;
+    proof?: string;
+    nonce?: string;
+    algorithm?: 'hmac-sha256' | 'sha-256';
     remainingRetries?: number;
     reason?: string;
   };

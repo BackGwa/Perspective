@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { DataConnection } from 'peerjs';
 import { ERROR_MESSAGES, PASSWORD_CONFIG } from '../config/constants';
 import { PASSWORD_VERIFICATION } from '../config/uiText';
 import type { PasswordMessage } from '../types/password.types';
-import { hashPassword } from '../utils/passwordHasher';
+import { hashPassword, hmacSha256 } from '../utils/passwordHasher';
 
 interface UsePasswordVerificationOptions {
   dataConnection: DataConnection | null;
@@ -22,17 +22,20 @@ export function usePasswordVerification({
 }: UsePasswordVerificationOptions) {
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const nonceRef = useRef<string | null>(null);
 
   const handlePasswordMessage = useCallback((message: PasswordMessage) => {
     switch (message.type) {
       case 'PASSWORD_REQUEST':
         console.log('[PasswordVerification] Password required');
+        nonceRef.current = message.payload?.nonce ?? null;
         setIsVerifying(false);
         onPasswordRequired?.();
         break;
 
       case 'PASSWORD_APPROVED':
         console.log('[PasswordVerification] Password approved');
+        nonceRef.current = null;
         setIsVerifying(false);
         setErrorMessage(null);
         onApproved?.();
@@ -47,6 +50,7 @@ export function usePasswordVerification({
 
         if (remainingRetries === 0) {
           // Max retries exceeded
+          nonceRef.current = null;
           setErrorMessage(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
           onMaxRetriesExceeded?.();
         } else {
@@ -60,6 +64,7 @@ export function usePasswordVerification({
 
       case 'MAX_PARTICIPANTS_EXCEEDED':
         console.log('[PasswordVerification] Max participants exceeded');
+        nonceRef.current = null;
         setIsVerifying(false);
         setErrorMessage(message.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
         onMaxRetriesExceeded?.();
@@ -93,12 +98,32 @@ export function usePasswordVerification({
     setErrorMessage(null);
 
     const hashedPassword = await hashPassword(password);
+    const nonce = nonceRef.current;
+    let payload: PasswordMessage['payload'];
+
+    if (nonce) {
+      try {
+        const proof = await hmacSha256(hashedPassword, nonce);
+        payload = {
+          proof,
+          algorithm: 'hmac-sha256'
+        };
+      } catch (error) {
+        console.error('[PasswordVerification] Failed to create HMAC proof:', error);
+        setIsVerifying(false);
+        setErrorMessage(ERROR_MESSAGES.CONNECTION_ERROR);
+        return;
+      }
+    } else {
+      // Legacy fallback when no nonce is provided
+      payload = {
+        password: hashedPassword
+      };
+    }
 
     const responseMessage: PasswordMessage = {
       type: 'PASSWORD_RESPONSE',
-      payload: {
-        password: hashedPassword
-      }
+      payload
     };
 
     // Send directly through the data connection (not through peerService)
