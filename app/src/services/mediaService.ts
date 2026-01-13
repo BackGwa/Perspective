@@ -17,11 +17,28 @@ class MediaService {
   private sourceType: MediaSourceType | null = null;
   private currentFacingMode: CameraFacingMode = 'user';
   private availableCameras: MediaDeviceInfo[] = [];
+  private lastCameraQueryAt: number | null = null;
+  private hasDeviceChangeListener = false;
+  private readonly devicesCacheTtlMs = 5000;
 
   async getAvailableCameras(): Promise<MediaDeviceInfo[]> {
     try {
+      if (!this.hasDeviceChangeListener && navigator.mediaDevices?.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', () => {
+          this.availableCameras = [];
+          this.lastCameraQueryAt = null;
+        });
+        this.hasDeviceChangeListener = true;
+      }
+
+      const now = Date.now();
+      if (this.lastCameraQueryAt && now - this.lastCameraQueryAt < this.devicesCacheTtlMs) {
+        return this.availableCameras;
+      }
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       this.availableCameras = devices.filter(device => device.kind === 'videoinput');
+      this.lastCameraQueryAt = now;
       return this.availableCameras;
     } catch (error) {
       console.warn('Failed to enumerate devices:', error);
@@ -47,10 +64,6 @@ class MediaService {
 
     // If labels don't reveal facing modes, assume multiple cameras = switchable
     return (hasBack && hasFront) || cameras.length >= 2;
-  }
-
-  getCurrentFacingMode(): CameraFacingMode {
-    return this.currentFacingMode;
   }
 
   async getCameraStream(facingMode?: CameraFacingMode): Promise<MediaStream> {
@@ -81,10 +94,6 @@ class MediaService {
       const stream = await navigator.mediaDevices.getDisplayMedia(SCREEN_CONSTRAINTS);
       applyVideoContentHint(stream.getVideoTracks()[0], 'detail');
       this.currentStream = stream;
-
-      stream.getVideoTracks()[0].addEventListener('ended', () => {
-        this.stopStream();
-      });
 
       return stream;
     } catch (error) {
@@ -185,16 +194,6 @@ class MediaService {
     }
   }
 
-  isVideoEnabled(stream: MediaStream): boolean {
-    const videoTrack = stream.getVideoTracks()[0];
-    return videoTrack ? videoTrack.enabled : false;
-  }
-
-  isAudioEnabled(_stream: MediaStream): boolean {
-    // Check microphone track status
-    return this.microphoneTrack ? this.microphoneTrack.enabled : false;
-  }
-
   async switchCamera(currentStream: MediaStream): Promise<MediaStream> {
     if (this.sourceType !== 'camera') {
       throw new Error(ERROR_MESSAGES.CAMERA_SWITCHING_ONLY_AVAILABLE);
@@ -229,15 +228,6 @@ class MediaService {
     } catch (error) {
       throw this.handleMediaError(error);
     }
-  }
-
-  checkWebRTCSupport(): boolean {
-    return !!(
-      navigator.mediaDevices &&
-      typeof navigator.mediaDevices.getUserMedia === 'function' &&
-      typeof navigator.mediaDevices.getDisplayMedia === 'function' &&
-      window.RTCPeerConnection
-    );
   }
 
   private handleMediaError(error: unknown): Error {

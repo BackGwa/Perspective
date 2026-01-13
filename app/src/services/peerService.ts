@@ -1,4 +1,5 @@
-import Peer, { MediaConnection, DataConnection } from 'peerjs';
+import type Peer from 'peerjs';
+import type { MediaConnection, DataConnection } from 'peerjs';
 import { PEER_CONFIG, PEER_SERVER_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PeerRole } from '../types/peer.types';
 
@@ -19,8 +20,17 @@ class PeerService {
   private peer: Peer | null = null;
   private activeCalls: Map<string, MediaConnection> = new Map();
   private dataConnections: Map<string, DataConnection> = new Map();
+  private peerModulePromise: Promise<typeof import('peerjs')> | null = null;
 
-  initializePeer(role: PeerRole, callbacks: PeerEventCallback): Peer {
+  private async loadPeerModule() {
+    if (!this.peerModulePromise) {
+      this.peerModulePromise = import('peerjs');
+    }
+    return this.peerModulePromise;
+  }
+
+  async initializePeer(role: PeerRole, callbacks: PeerEventCallback): Promise<Peer> {
+    const { default: Peer } = await this.loadPeerModule();
     if (this.peer) {
       this.peer.destroy();
     }
@@ -141,14 +151,6 @@ class PeerService {
     });
   }
 
-  closeCall(peerId: string): void {
-    const call = this.activeCalls.get(peerId);
-    if (call) {
-      call.close();
-      this.activeCalls.delete(peerId);
-    }
-  }
-
   closeAllCalls(): void {
     this.activeCalls.forEach((call) => {
       call.close();
@@ -172,22 +174,6 @@ class PeerService {
     } else {
       console.error('Data connection not available for peer:', peerId);
     }
-  }
-
-  getDataConnection(peerId: string): DataConnection | undefined {
-    return this.dataConnections.get(peerId);
-  }
-
-  getAllDataConnections(): Map<string, DataConnection> {
-    return this.dataConnections;
-  }
-
-  getPeer(): Peer | null {
-    return this.peer;
-  }
-
-  getActiveCalls(): Map<string, MediaConnection> {
-    return this.activeCalls;
   }
 
   applyVideoDegradationPreference(call: MediaConnection, preference: RTCDegradationPreference): void {
@@ -222,60 +208,6 @@ class PeerService {
     return new Error(ERROR_MESSAGES.PEER_CONNECTION_FAILED);
   }
 
-  async validateConnection(hostPeerId: string, timeoutMs: number = 5000): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const tempPeer = new Peer({
-        ...PEER_SERVER_CONFIG,
-        config: { iceServers: PEER_CONFIG.iceServers },
-        debug: 0
-      });
-
-      let responseHandled = false;
-      const cleanup = () => {
-        if (!responseHandled) {
-          responseHandled = true;
-          tempPeer.destroy();
-        }
-      };
-
-      const timeoutId = setTimeout(() => {
-        if (!responseHandled) {
-          cleanup();
-          reject(new Error(ERROR_MESSAGES.CONNECTION_TIMED_OUT));
-        }
-      }, timeoutMs);
-
-      tempPeer.on('open', () => {
-        const conn = tempPeer.connect(hostPeerId);
-
-        conn.on('open', () => {
-          clearTimeout(timeoutId);
-          cleanup();
-          resolve(true);
-        });
-
-        conn.on('error', () => {
-          clearTimeout(timeoutId);
-          cleanup();
-          reject(new Error(ERROR_MESSAGES.COULD_NOT_CONNECT_TO_HOST));
-        });
-
-        conn.on('close', () => {
-          if (!responseHandled) {
-            clearTimeout(timeoutId);
-            cleanup();
-            reject(new Error(ERROR_MESSAGES.CONNECTION_CLOSED_IMMEDIATELY));
-          }
-        });
-      });
-
-      tempPeer.on('error', (err) => {
-        clearTimeout(timeoutId);
-        cleanup();
-        reject(err);
-      });
-    });
-  }
 }
 
 export const peerService = new PeerService();

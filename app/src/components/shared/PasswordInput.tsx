@@ -11,6 +11,7 @@ interface PasswordInputProps {
   placeholder?: string;
   disabled?: boolean;
   error?: boolean;
+  onValidationError?: (message: string | null) => void;
   onFocus?: () => void;
   onBlur?: () => void;
 }
@@ -22,6 +23,7 @@ export function PasswordInput({
   placeholder = 'Enter password',
   disabled = false,
   error = false,
+  onValidationError,
   onFocus,
   onBlur
 }: PasswordInputProps) {
@@ -40,14 +42,19 @@ export function PasswordInput({
 
   const handleChange = (newValue: string) => {
     if (newValue.length > PASSWORD_CONFIG.MAX_LENGTH) {
-      setLengthError(ERROR_MESSAGES.PASSWORD_TOO_LONG);
+      const message = ERROR_MESSAGES.PASSWORD_TOO_LONG;
+      setLengthError(message);
+      onValidationError?.(message);
       return;
     }
 
     if (newValue.length > 0 && newValue.length < PASSWORD_CONFIG.MIN_LENGTH) {
-      setLengthError(ERROR_MESSAGES.PASSWORD_TOO_SHORT);
+      const message = ERROR_MESSAGES.PASSWORD_TOO_SHORT;
+      setLengthError(message);
+      onValidationError?.(message);
     } else {
       setLengthError(null);
+      onValidationError?.(null);
     }
 
     onChange(newValue);
@@ -80,11 +87,6 @@ export function PasswordInput({
           <IconEye className="password-input__toggle-icon" />
         )}
       </button>
-      {lengthError && (
-        <div className="password-input__error">
-          {lengthError}
-        </div>
-      )}
     </div>
   );
 }

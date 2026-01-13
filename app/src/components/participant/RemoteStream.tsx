@@ -15,12 +15,22 @@ export function RemoteStream({ stream, isConnecting, isMuted = true }: RemoteStr
   const { frameStyle, setAspect } = useAspectFit(containerRef);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      console.log('RemoteStream: Setting stream to video element', stream);
-      console.log('Stream tracks:', stream.getTracks());
-      videoRef.current.srcObject = stream;
+    if (videoRef.current) {
+      if (stream) {
+        console.log('RemoteStream: Setting stream to video element', stream);
+        console.log('Stream tracks:', stream.getTracks());
+      }
+      videoRef.current.srcObject = stream ?? null;
     }
   }, [stream]);
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, []);
 
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;

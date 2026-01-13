@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { MediaConnection, DataConnection } from 'peerjs';
+import { useCallback, useEffect, useRef } from 'react';
+import type { MediaConnection, DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
 import type { MediaSourceType } from '../types/media.types';
 import { peerService } from '../services/peerService';
@@ -37,7 +37,6 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   const pendingPasswordApprovalRef = useRef<Set<string>>(new Set());
   const streamRef = useRef<MediaStream | null>(stream || null);
   const hasInitialized = useRef(false);
-  const [dataConnection, setDataConnection] = useState<DataConnection | null>(null);
 
   useEffect(() => {
     streamRef.current = stream || null;
@@ -71,7 +70,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     pendingPasswordApprovalRef.current.delete(participantId);
   }, []);
 
-  const { setupPasswordListener, isPasswordProtected } = usePasswordProtection({
+  const { setupPasswordListener } = usePasswordProtection({
     sessionPassword,
     domainPolicy: sessionDomainPolicy,
     currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
@@ -79,41 +78,42 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     onParticipantRejected: handleParticipantRejected
   });
 
-  const initializeHost = useCallback(() => {
+  const initializeHost = useCallback(async () => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     setConnectionStatus('initializing');
 
-    const peer = peerService.initializePeer(role, {
-      onOpen: (id: string) => {
-        setPeerId(id);
-        setConnectionStatus('waiting_for_peer');
-      },
-      onConnection: (participantId: string, dataConn: DataConnection) => {
-        console.log('Participant connected:', participantId);
-        setConnectionStatus('connected');
+    try {
+      await peerService.initializePeer(role, {
+        onOpen: (id: string) => {
+          setPeerId(id);
+          setConnectionStatus('waiting_for_peer');
+        },
+        onConnection: (participantId: string, dataConn: DataConnection) => {
+          console.log('Participant connected:', participantId);
+          setConnectionStatus('connected');
 
-        // Setup password listener - this will handle approval/rejection
-        pendingPasswordApprovalRef.current.add(participantId);
-        setupPasswordListener(participantId, dataConn);
-
-        // Note: callPeer will be called in handleParticipantApproved callback
-        // after password verification (or immediately if no password)
-      },
-      onDisconnect: () => {
-        setConnectionStatus('disconnected');
-      },
-      onError: (error: Error) => {
-        console.error('Peer error:', error);
-        setConnectionStatus('failed');
-      },
-      onClose: () => {
-        setConnectionStatus('closed');
-      }
-    });
-
-    return peer;
+          // Setup password listener - this will handle approval/rejection
+          pendingPasswordApprovalRef.current.add(participantId);
+          setupPasswordListener(participantId, dataConn);
+        },
+        onDisconnect: () => {
+          setConnectionStatus('disconnected');
+        },
+        onError: (error: Error) => {
+          console.error('Peer error:', error);
+          setConnectionStatus('failed');
+        },
+        onClose: () => {
+          setConnectionStatus('closed');
+        }
+      });
+    } catch (error) {
+      console.error('Failed to initialize peer:', error);
+      setConnectionStatus('failed');
+      hasInitialized.current = false;
+    }
   }, [role, setPeerId, setConnectionStatus]);
 
   const initializeParticipant = useCallback(async () => {
@@ -169,52 +169,55 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     }
 
     // No existing peer - create new one (shouldn't happen with password flow)
-    const peer = peerService.initializePeer(role, {
-      onOpen: (id: string) => {
-        setPeerId(id);
-        setConnectionStatus('connecting');
+    try {
+      await peerService.initializePeer(role, {
+        onOpen: (id: string) => {
+          setPeerId(id);
+          setConnectionStatus('connecting');
 
-        peerService.connectToPeer(hostPeerId)
-          .then((dataConn) => {
-            console.log('Connected to host, waiting for call...');
-            setDataConnection(dataConn);
-          })
-          .catch((error) => {
-            console.error('Failed to connect to host:', error);
-            setConnectionStatus('failed');
+          peerService.connectToPeer(hostPeerId)
+            .then(() => {
+              console.log('Connected to host, waiting for call...');
+            })
+            .catch((error) => {
+              console.error('Failed to connect to host:', error);
+              setConnectionStatus('failed');
+            });
+        },
+        onCall: (call: MediaConnection) => {
+          console.log('Receiving call from host');
+
+          call.on('stream', (remoteStream: MediaStream) => {
+            console.log('Received remote stream', remoteStream);
+            console.log('Stream tracks:', remoteStream.getTracks());
+            setRemoteStream(remoteStream);
+            setConnectionStatus('connected');
           });
-      },
-      onCall: (call: MediaConnection) => {
-        console.log('Receiving call from host');
 
-        call.on('stream', (remoteStream: MediaStream) => {
-          console.log('Received remote stream', remoteStream);
-          console.log('Stream tracks:', remoteStream.getTracks());
-          setRemoteStream(remoteStream);
-          setConnectionStatus('connected');
-        });
+          call.on('close', () => {
+            console.log('Host ended the call');
+            setRemoteStream(null);
+            setConnectionStatus('disconnected');
+          });
 
-        call.on('close', () => {
-          console.log('Host ended the call');
-          setRemoteStream(null);
+          peerService.answerCall(call);
+        },
+        onDisconnect: () => {
           setConnectionStatus('disconnected');
-        });
-
-        peerService.answerCall(call);
-      },
-      onDisconnect: () => {
-        setConnectionStatus('disconnected');
-      },
-      onError: (error: Error) => {
-        console.error('Peer error:', error);
-        setConnectionStatus('failed');
-      },
-      onClose: () => {
-        setConnectionStatus('closed');
-      }
-    });
-
-    return peer;
+        },
+        onError: (error: Error) => {
+          console.error('Peer error:', error);
+          setConnectionStatus('failed');
+        },
+        onClose: () => {
+          setConnectionStatus('closed');
+        }
+      });
+    } catch (error) {
+      console.error('Failed to initialize peer:', error);
+      setConnectionStatus('failed');
+      hasInitialized.current = false;
+    }
   }, [role, hostPeerId, existingPeer, setPeerId, setConnectionStatus, setRemoteStream]);
 
   const disconnect = useCallback(() => {
@@ -244,9 +247,9 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
 
   useEffect(() => {
     if (role === 'host') {
-      initializeHost();
+      void initializeHost();
     } else if (role === 'participant' && hostPeerId) {
-      initializeParticipant();
+      void initializeParticipant();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, hostPeerId, existingPeer]);
@@ -300,8 +303,6 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     connectionStatus,
     disconnect,
     getShareLink,
-    participantCount: participantsRef.current.size,
-    dataConnection,
-    isPasswordProtected: role === 'host' ? isPasswordProtected : false
+    participantCount: participantsRef.current.size
   };
 }

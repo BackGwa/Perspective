@@ -20,7 +20,6 @@ type MenuState = 'root' | 'share' | 'settings' | 'join';
 type JoinMode = 'input' | 'qr';
 
 import { useMediaStream } from '../hooks/useMediaStream';
-import { peerService } from '../services/peerService';
 import type { MediaSourceType } from '../types/media.types';
 import { useQRScanner } from '../hooks/useQRScanner';
 import type { QRScanResult } from '../types/qr.types';
@@ -28,10 +27,10 @@ import { useStreamContext } from '../contexts/StreamContext';
 import { PasswordInput } from '../components/shared/PasswordInput';
 import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
-import { ERROR_MESSAGES } from '../config/constants';
+import { ERROR_MESSAGES, PEER_CONFIG, PEER_SERVER_CONFIG } from '../config/constants';
 import { hashPassword } from '../utils/passwordHasher';
 import type { DataConnection } from 'peerjs';
-import Peer from 'peerjs';
+import type Peer from 'peerjs';
 import { isValidPasswordMessage } from '../types/password.types';
 import type { SessionJoinRequestMessage } from '../types/session.types';
 import { isSessionJoinRejectedMessage } from '../types/session.types';
@@ -50,6 +49,7 @@ export function LandingPage() {
 
     const [menuState, setMenuState] = useState<MenuState>('root');
     const [error, setError] = useState<string | null>(null);
+    const [passwordInputError, setPasswordInputError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [sessionId, setSessionId] = useState('');
     const [joinMode, setJoinMode] = useState<JoinMode>('input');
@@ -62,9 +62,9 @@ export function LandingPage() {
     // Password-related state (Participant)
     const [participantPassword, setParticipantPassword] = useState('');
     const [isAwaitingPasswordVerification, setIsAwaitingPasswordVerification] = useState(false);
-    const [hostPeerIdForVerification, setHostPeerIdForVerification] = useState<string | null>(null);
     const [dataConnectionForVerification, setDataConnectionForVerification] = useState<DataConnection | null>(null);
-    const [tempPeerForVerification, setTempPeerForVerification] = useState<Peer | null>(null);
+    const hostPeerIdForVerificationRef = useRef<string | null>(null);
+    const tempPeerForVerificationRef = useRef<Peer | null>(null);
 
     // Animation refs
     const menuRef = useRef<HTMLDivElement>(null);
@@ -191,36 +191,47 @@ export function LandingPage() {
     const {
         isVerifying,
         errorMessage: passwordError,
-        submitPassword
+        submitPassword,
+        handlePasswordMessage
     } = usePasswordVerification({
-        hostPeerId: hostPeerIdForVerification,
         dataConnection: dataConnectionForVerification,
+        onPasswordRequired: () => {
+            setIsConnecting(false);
+            setIsAwaitingPasswordVerification(true);
+        },
         onApproved: () => {
             console.log('[LandingPage] Password approved, navigating to participant page');
+            setIsConnecting(false);
+            setIsAwaitingPasswordVerification(false);
 
             // Save peer to context for reuse in ParticipantPage
-            if (tempPeerForVerification) {
+            const currentTempPeer = tempPeerForVerificationRef.current;
+            if (currentTempPeer) {
                 console.log('[LandingPage] Saving peer to context for reuse');
-                setParticipantPeer(tempPeerForVerification);
+                setParticipantPeer(currentTempPeer);
                 // Don't destroy the peer - it will be reused
-                setTempPeerForVerification(null);
+                tempPeerForVerificationRef.current = null;
             }
 
-            if (hostPeerIdForVerification) {
-                navigate(`/share?peer=${hostPeerIdForVerification}`, {
+            const currentHostPeerId = hostPeerIdForVerificationRef.current;
+            if (currentHostPeerId) {
+                navigate(`/share?peer=${currentHostPeerId}`, {
                     state: { fromPasswordVerification: true }
                 });
             }
         },
         onRejected: (reason) => {
             console.log('[LandingPage] Password rejected:', reason);
+            setIsConnecting(false);
         },
         onMaxRetriesExceeded: () => {
             console.log('[LandingPage] Max retries exceeded');
+            setIsConnecting(false);
             setError(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
-            setTempPeerForVerification(cleanupParticipantPeer(tempPeerForVerification));
+            const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
+            tempPeerForVerificationRef.current = cleanedPeer;
             setIsAwaitingPasswordVerification(false);
-            setHostPeerIdForVerification(null);
+            hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
             setMenuState('root');
             setSessionId('');
@@ -246,6 +257,10 @@ export function LandingPage() {
             }, TIMING.AUTO_JOIN_DELAY);
         }
     }, [location]);
+
+    useEffect(() => {
+        setPasswordInputError(null);
+    }, [menuState, isAwaitingPasswordVerification]);
 
     // Cleanup QR camera on unmount or when leaving join menu
     useEffect(() => {
@@ -333,9 +348,10 @@ export function LandingPage() {
 
         // Handle back from join menu with password verification in progress
         if (menuState === 'join' && isAwaitingPasswordVerification) {
-            setTempPeerForVerification(cleanupParticipantPeer(tempPeerForVerification));
+            const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
+            tempPeerForVerificationRef.current = cleanedPeer;
             setIsAwaitingPasswordVerification(false);
-            setHostPeerIdForVerification(null);
+            hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
             setParticipantPassword('');
             setError(null);
@@ -463,17 +479,23 @@ export function LandingPage() {
             setIsConnecting(true);
 
             // Clean up any previous session state
-            setTempPeerForVerification(cleanupParticipantPeer(tempPeerForVerification));
+            const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
+            tempPeerForVerificationRef.current = cleanedPeer;
             setParticipantPeer(null);
             setRemoteStream(null);
             setConnectionStatus('idle');
-
-            // Validate connection first
-            await peerService.validateConnection(peerIdToJoin);
+            hostPeerIdForVerificationRef.current = peerIdToJoin;
 
             // Create a temporary peer to establish data connection
-            const tempPeer = new (await import('peerjs')).default();
-            setTempPeerForVerification(tempPeer);
+            const { default: Peer } = await import('peerjs');
+            const tempPeer = new Peer({
+                ...PEER_SERVER_CONFIG,
+                config: {
+                    iceServers: PEER_CONFIG.iceServers
+                },
+                debug: PEER_CONFIG.debug
+            });
+            tempPeerForVerificationRef.current = tempPeer;
 
             tempPeer.on('open', () => {
                 console.log('[LandingPage] Temporary peer opened for verification');
@@ -482,6 +504,7 @@ export function LandingPage() {
 
                 dataConn.on('open', () => {
                     console.log('[LandingPage] Data connection established for verification');
+                    setDataConnectionForVerification(dataConn);
 
                     const joinRequestMessage: SessionJoinRequestMessage = {
                         type: 'SESSION_JOIN_REQUEST',
@@ -505,36 +528,22 @@ export function LandingPage() {
                             setError(data.payload.reason);
                             setIsConnecting(false);
                             setIsAwaitingPasswordVerification(false);
-                            setHostPeerIdForVerification(null);
+                            hostPeerIdForVerificationRef.current = null;
                             setDataConnectionForVerification(null);
-                            setTempPeerForVerification(cleanupParticipantPeer(tempPeer));
+                            const cleanedPeer = cleanupParticipantPeer(tempPeer);
+                            tempPeerForVerificationRef.current = cleanedPeer;
                             dataConn.close();
                             return;
                         }
 
                         if (!isValidPasswordMessage(data)) return;
 
-                        if (data.type === 'PASSWORD_APPROVED') {
-                            // Handle PASSWORD_APPROVED for both public rooms and after password verification
-                            console.log('[LandingPage] Password approved, navigating');
-                            setIsConnecting(false);
-                            setParticipantPeer(tempPeer);
-                            setTempPeerForVerification(null);
-                            navigate(`/share?peer=${peerIdToJoin}`, {
-                                state: { fromPasswordVerification: true }
-                            });
-                        } else if (data.type === 'PASSWORD_REQUEST' && !isPasswordRoom) {
-                            // Password required - show password input (only handle once)
+                        if (data.type === 'PASSWORD_REQUEST') {
+                            if (isPasswordRoom) return;
                             isPasswordRoom = true;
-                            console.log('[LandingPage] Password required');
-                            setIsConnecting(false);
-                            setIsAwaitingPasswordVerification(true);
-                            setHostPeerIdForVerification(peerIdToJoin);
-                            setDataConnectionForVerification(dataConn);
-                        } else if (data.type === 'PASSWORD_REJECTED') {
-                            // Password incorrect - show error (handled by usePasswordVerification)
-                            console.log('[LandingPage] Password rejected');
                         }
+
+                        handlePasswordMessage(data);
                     });
                 });
 
@@ -542,7 +551,8 @@ export function LandingPage() {
                     console.error('[LandingPage] Data connection error:', err);
                     setError(ERROR_MESSAGES.CONNECTION_ERROR);
                     setIsConnecting(false);
-                    setTempPeerForVerification(cleanupParticipantPeer(tempPeer));
+                    const cleanedPeer = cleanupParticipantPeer(tempPeer);
+                    tempPeerForVerificationRef.current = cleanedPeer;
                 });
             });
 
@@ -550,7 +560,8 @@ export function LandingPage() {
                 console.error('[LandingPage] Peer error during join:', err);
                 setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
                 setIsConnecting(false);
-                setTempPeerForVerification(cleanupParticipantPeer(tempPeer));
+                const cleanedPeer = cleanupParticipantPeer(tempPeer);
+                tempPeerForVerificationRef.current = cleanedPeer;
             });
 
         } catch (err) {
@@ -596,7 +607,7 @@ export function LandingPage() {
     };
 
     return (
-        <div className="landing-page" ref={landingPageRef}>
+        <main className="landing-page" ref={landingPageRef}>
             <div className="landing-page__left" ref={leftPanelRef}>
                 <div className="hero-container">
                     {joinMode === 'qr' && menuState === 'join' ? (
@@ -609,7 +620,7 @@ export function LandingPage() {
                             style={{ objectFit: 'cover' }}
                         />
                     ) : (
-                        <img src={heroImage} className="hero-bg" draggable="false" />
+                        <img src={heroImage} alt="" className="hero-bg" draggable="false" />
                     )}
                     {!(joinMode === 'qr' && menuState === 'join') && (
                         <div className="brand-title" ref={brandTitleRef}>
@@ -668,6 +679,7 @@ export function LandingPage() {
                                         onChange={setHostPassword}
                                         placeholder={JOIN_FLOW.ROOM_PASSWORD_OPTIONAL}
                                         disabled={false}
+                                        onValidationError={setPasswordInputError}
                                         onFocus={() => setIsInputFocused(true)}
                                         onBlur={() => setIsInputFocused(false)}
                                     />
@@ -745,6 +757,7 @@ export function LandingPage() {
                                                 placeholder={JOIN_FLOW.PASSWORD_REQUIRED}
                                                 disabled={isVerifying}
                                                 error={!!passwordError}
+                                                onValidationError={setPasswordInputError}
                                                 onFocus={() => setIsInputFocused(true)}
                                                 onBlur={() => setIsInputFocused(false)}
                                             />
@@ -792,6 +805,12 @@ export function LandingPage() {
                             </div>
                         )}
 
+                        {passwordInputError && (
+                            <div className="error-message">
+                                {passwordInputError}
+                            </div>
+                        )}
+
                         {isConnecting && (
                             <div className="error-message" style={{ color: 'var(--text-primary)' }}>
                                 {JOIN_FLOW.CONNECTING}
@@ -810,6 +829,6 @@ export function LandingPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }

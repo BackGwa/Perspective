@@ -5,10 +5,14 @@ import type { MediaSourceType } from '../types/media.types';
 
 interface UseMediaStreamOptions {
   cleanupOnUnmount?: boolean;
+  onStreamEnded?: () => void;
 }
 
 export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmount: true }) {
+  const { cleanupOnUnmount = true, onStreamEnded } = options;
   const { streamState, setStream, setPaused, setMuted, setError, clearStream } = useStreamContext();
+  const isStoppingRef = useRef(false);
+  const hasHandledStreamEndRef = useRef(false);
 
   const startCapture = useCallback(async (sourceType: MediaSourceType) => {
     try {
@@ -32,6 +36,7 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
 
   const stopCapture = useCallback(() => {
     if (streamState.stream) {
+      isStoppingRef.current = true;
       mediaService.stopStream(streamState.stream);
       clearStream();
     }
@@ -97,18 +102,63 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
   }, [streamState.stream]);
 
   useEffect(() => {
+    isStoppingRef.current = false;
+    hasHandledStreamEndRef.current = false;
+  }, [streamState.stream]);
+
+  useEffect(() => {
+    const stream = streamState.stream;
+    if (!stream) return;
+
+    const handleTrackEnded = () => {
+      if (isStoppingRef.current || hasHandledStreamEndRef.current) return;
+      hasHandledStreamEndRef.current = true;
+      stopCapture();
+      onStreamEnded?.();
+    };
+
+    const addEndedListener = (track: MediaStreamTrack) => {
+      if (track.kind !== 'video') return;
+      track.addEventListener('ended', handleTrackEnded);
+    };
+
+    const removeEndedListener = (track: MediaStreamTrack) => {
+      if (track.kind !== 'video') return;
+      track.removeEventListener('ended', handleTrackEnded);
+    };
+
+    stream.getVideoTracks().forEach(addEndedListener);
+
+    const handleAddTrack = (event: MediaStreamTrackEvent) => {
+      addEndedListener(event.track);
+    };
+
+    const handleRemoveTrack = (event: MediaStreamTrackEvent) => {
+      removeEndedListener(event.track);
+    };
+
+    stream.addEventListener('addtrack', handleAddTrack);
+    stream.addEventListener('removetrack', handleRemoveTrack);
+
     return () => {
-      if (options.cleanupOnUnmount && streamRef.current) {
+      stream.getVideoTracks().forEach(removeEndedListener);
+      stream.removeEventListener('addtrack', handleAddTrack);
+      stream.removeEventListener('removetrack', handleRemoveTrack);
+    };
+  }, [streamState.stream, stopCapture, onStreamEnded]);
+
+  useEffect(() => {
+    return () => {
+      if (cleanupOnUnmount && streamRef.current) {
         mediaService.stopStream(streamRef.current);
       }
     };
-  }, [options.cleanupOnUnmount]); // Removed streamState.stream dependency to avoid re-triggering, relying on ref/closure or just simple unmount check if possible. But standard pattern is ok.
+  }, [cleanupOnUnmount]); // Removed streamState.stream dependency to avoid re-triggering, relying on ref/closure or just simple unmount check if possible. But standard pattern is ok.
 
 
   return {
     stream: streamState.stream,
     sourceType: streamState.sourceType,
-    isActive: streamState.isActive,
     isPaused: streamState.isPaused,
     isMuted: streamState.isMuted,
     error: streamState.error,

@@ -29,11 +29,7 @@ sequenceDiagram
     Server-->>PS: peerId
     PS-->>HostPage: peerId (for QR/Link)
 
-    PartLP->>PS: validateConnection(peerId)
-    PS->>Server: temp connect
-    PS-->>PartLP: ok
-
-    PartLP->>PPeer: new Peer()
+    PartLP->>PPeer: new Peer(config from env)
     PPeer->>Server: open
     PPeer->>PS: connect(hostPeerId) (data channel)
     PartLP->>PS: SESSION_JOIN_REQUEST(origin)
@@ -43,8 +39,9 @@ sequenceDiagram
         PS-->>PartLP: SESSION_JOIN_REJECTED
     else Domain ok
         alt Password protected
-            PS-->>PartLP: PASSWORD_REQUEST
-            PartLP->>PartLP: hashPassword + PASSWORD_RESPONSE
+            PS-->>PartLP: PASSWORD_REQUEST(nonce, algorithm)
+            PartLP->>PartLP: hashPassword + HMAC(nonce)
+            PartLP->>PS: PASSWORD_RESPONSE(proof)
             PS-->>PartLP: PASSWORD_APPROVED
         else Public room
             PS-->>PartLP: PASSWORD_APPROVED
@@ -82,11 +79,12 @@ sequenceDiagram
         else Public room
             PwdH-->>Part: PASSWORD_APPROVED
         else Password protected
-            PwdH-->>Part: PASSWORD_REQUEST
+            PwdH-->>Part: PASSWORD_REQUEST(nonce, algorithm)
             Part->>PwdV: submitPassword()
             PwdV->>PwdV: hashPassword(input)
-            PwdV-->>PwdH: PASSWORD_RESPONSE(hash)
-            PwdH->>PwdH: verifyPassword(hash)
+            PwdV->>PwdV: hmacSha256(hash, nonce)
+            PwdV-->>PwdH: PASSWORD_RESPONSE(proof)
+            PwdH->>PwdH: verifyProof(proof, nonce)
             alt Valid
                 PwdH-->>Part: PASSWORD_APPROVED
             else Invalid
@@ -128,10 +126,9 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Participant scans QR or enters link] --> B[Extract Peer ID]
-    B --> C["validateConnection(peerId)"]
-    C --> D[Create temp Peer + data connection]
-    D --> E["Send SESSION_JOIN_REQUEST(origin)"]
-    E --> F{Domain allowed?}
+    B --> C["Create temp Peer (configured server) + data connection"]
+    C --> D["Send SESSION_JOIN_REQUEST(origin)"]
+    D --> F{Domain allowed?}
 
     F -->|No| G[Show error and stop]
     F -->|Yes| H{Max participants?}
@@ -140,8 +137,8 @@ flowchart TD
     H -->|Available| J{Password protected?}
 
     J -->|No| K[Receive PASSWORD_APPROVED]
-    J -->|Yes| L[Show password input]
-    L --> M[hashPassword + PASSWORD_RESPONSE]
+    J -->|Yes| L["Show password input (nonce)"]
+    L --> M["hashPassword + HMAC(nonce) -> PASSWORD_RESPONSE(proof)"]
     M --> N{Approved?}
     N -->|No| O[Show error / retry]
     N -->|Yes| K
@@ -220,6 +217,6 @@ flowchart TD
     I --> J["ConnectionStatus: idle"]
     J --> K[Redirect to LandingPage]
 
-    B -->|Screen share ended| L[Video track ended event]
+    B -->|Screen or camera share ended| L[Video track ended event]
     L --> D
 ```

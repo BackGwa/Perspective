@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { DataConnection } from 'peerjs';
+import type { DataConnection } from 'peerjs';
 import { peerService } from '../services/peerService';
 import { passwordService } from '../services/passwordService';
 import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';
@@ -7,6 +7,7 @@ import type { PasswordMessage } from '../types/password.types';
 import { isValidPasswordMessage } from '../types/password.types';
 import type { DomainPolicy, SessionJoinRejectedMessage } from '../types/session.types';
 import { isSessionJoinRequestMessage } from '../types/session.types';
+import { generateNonce, hmacSha256 } from '../utils/passwordHasher';
 
 interface UsePasswordProtectionOptions {
   sessionPassword: string | null;
@@ -25,10 +26,7 @@ export function usePasswordProtection({
 }: UsePasswordProtectionOptions) {
   const participantRetries = useRef<Map<string, number>>(new Map());
   const approvedParticipants = useRef<Set<string>>(new Set());
-
-  const isParticipantApproved = useCallback((peerId: string): boolean => {
-    return approvedParticipants.current.has(peerId);
-  }, []);
+  const participantNonces = useRef<Map<string, string>>(new Map());
 
   const setupPasswordListener = useCallback((peerId: string, dataConnection: DataConnection) => {
     const isPasswordProtected = passwordService.isPasswordProtected(sessionPassword);
@@ -39,6 +37,7 @@ export function usePasswordProtection({
     const markRejected = () => {
       if (isResolved) return;
       isResolved = true;
+      participantNonces.current.delete(peerId);
       onParticipantRejected?.(peerId);
     };
 
@@ -47,6 +46,7 @@ export function usePasswordProtection({
       isResolved = true;
       approvedParticipants.current.add(peerId);
       participantRetries.current.delete(peerId);
+      participantNonces.current.delete(peerId);
       onParticipantApproved?.(peerId);
     };
 
@@ -97,9 +97,14 @@ export function usePasswordProtection({
         return;
       }
 
+      const nonce = generateNonce();
+      participantNonces.current.set(peerId, nonce);
       const requestMessage: PasswordMessage = {
         type: 'PASSWORD_REQUEST',
-        payload: {}
+        payload: {
+          nonce,
+          algorithm: 'hmac-sha256'
+        }
       };
       peerService.sendDataMessage(peerId, requestMessage);
     };
@@ -119,6 +124,71 @@ export function usePasswordProtection({
       }, 100);
     };
 
+    const handlePasswordResponse = async (data: PasswordMessage) => {
+      if (isResolved) return;
+
+      const currentRetries = participantRetries.current.get(peerId) || 0;
+      let isValid = false;
+
+      if (data.payload?.proof) {
+        const nonce = participantNonces.current.get(peerId);
+        if (!nonce || !sessionPassword) {
+          console.warn('[PasswordProtection] Missing nonce or session password for proof verification');
+        } else {
+          try {
+            const expectedProof = await hmacSha256(sessionPassword, nonce);
+            isValid = expectedProof === data.payload.proof;
+          } catch (error) {
+            console.error('[PasswordProtection] Failed to verify HMAC proof:', error);
+          }
+        }
+      } else {
+        console.warn('[PasswordProtection] Missing password proof');
+      }
+
+      if (isResolved) return;
+
+      if (isValid) {
+        const approvalMessage: PasswordMessage = {
+          type: 'PASSWORD_APPROVED',
+          payload: {}
+        };
+        peerService.sendDataMessage(peerId, approvalMessage);
+        approveParticipant();
+        return;
+      }
+
+      const newRetryCount = currentRetries + 1;
+      participantRetries.current.set(peerId, newRetryCount);
+
+      const remainingRetries = passwordService.getRemainingRetries(newRetryCount);
+
+      if (passwordService.shouldRejectParticipant(newRetryCount)) {
+        const rejectionMessage: PasswordMessage = {
+          type: 'PASSWORD_REJECTED',
+          payload: {
+            remainingRetries: 0,
+            reason: 'Maximum password attempts exceeded'
+          }
+        };
+        peerService.sendDataMessage(peerId, rejectionMessage);
+        markRejected();
+
+        setTimeout(() => {
+          dataConnection.close();
+        }, 100);
+      } else {
+        const rejectionMessage: PasswordMessage = {
+          type: 'PASSWORD_REJECTED',
+          payload: {
+            remainingRetries,
+            reason: 'Incorrect password'
+          }
+        };
+        peerService.sendDataMessage(peerId, rejectionMessage);
+      }
+    };
+
     dataConnection.on('data', (data: unknown) => {
       if (isSessionJoinRequestMessage(data)) {
         handleJoinRequest(data.payload.origin);
@@ -136,55 +206,7 @@ export function usePasswordProtection({
       }
 
       if (data.type === 'PASSWORD_RESPONSE') {
-        const providedPassword = data.payload?.password || '';
-
-        // Get current retry count
-        const currentRetries = participantRetries.current.get(peerId) || 0;
-
-        // Verify password
-        const isValid = passwordService.verifyPassword(providedPassword, sessionPassword || '');
-
-        if (isValid) {
-          const approvalMessage: PasswordMessage = {
-            type: 'PASSWORD_APPROVED',
-            payload: {}
-          };
-          peerService.sendDataMessage(peerId, approvalMessage);
-          approveParticipant();
-        } else {
-          // Password incorrect - increment retry count
-          const newRetryCount = currentRetries + 1;
-          participantRetries.current.set(peerId, newRetryCount);
-
-          const remainingRetries = passwordService.getRemainingRetries(newRetryCount);
-
-          if (passwordService.shouldRejectParticipant(newRetryCount)) {
-            // Max retries exceeded - reject permanently
-            const rejectionMessage: PasswordMessage = {
-              type: 'PASSWORD_REJECTED',
-              payload: {
-                remainingRetries: 0,
-                reason: 'Maximum password attempts exceeded'
-              }
-            };
-            peerService.sendDataMessage(peerId, rejectionMessage);
-            markRejected();
-
-            setTimeout(() => {
-              dataConnection.close();
-            }, 100);
-          } else {
-            // Send rejection with retry count
-            const rejectionMessage: PasswordMessage = {
-              type: 'PASSWORD_REJECTED',
-              payload: {
-                remainingRetries,
-                reason: 'Incorrect password'
-              }
-            };
-            peerService.sendDataMessage(peerId, rejectionMessage);
-          }
-        }
+        void handlePasswordResponse(data);
       }
     });
 
@@ -195,17 +217,7 @@ export function usePasswordProtection({
     });
   }, [sessionPassword, domainPolicy, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
 
-  const resetParticipantRetries = useCallback((peerId: string) => {
-    participantRetries.current.delete(peerId);
-    approvedParticipants.current.delete(peerId);
-  }, []);
-
-  const isPasswordProtected = passwordService.isPasswordProtected(sessionPassword);
-
   return {
-    setupPasswordListener,
-    isParticipantApproved,
-    resetParticipantRetries,
-    isPasswordProtected
+    setupPasswordListener
   };
 }
