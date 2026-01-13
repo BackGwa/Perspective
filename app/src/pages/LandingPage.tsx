@@ -27,7 +27,7 @@ import { useStreamContext } from '../contexts/StreamContext';
 import { PasswordInput } from '../components/shared/PasswordInput';
 import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
-import { ERROR_MESSAGES } from '../config/constants';
+import { ERROR_MESSAGES, PEER_CONFIG, PEER_SERVER_CONFIG } from '../config/constants';
 import { hashPassword } from '../utils/passwordHasher';
 import type { DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
@@ -487,7 +487,14 @@ export function LandingPage() {
             hostPeerIdForVerificationRef.current = peerIdToJoin;
 
             // Create a temporary peer to establish data connection
-            const tempPeer = new (await import('peerjs')).default();
+            const { default: Peer } = await import('peerjs');
+            const tempPeer = new Peer({
+                ...PEER_SERVER_CONFIG,
+                config: {
+                    iceServers: PEER_CONFIG.iceServers
+                },
+                debug: PEER_CONFIG.debug
+            });
             tempPeerForVerificationRef.current = tempPeer;
 
             tempPeer.on('open', () => {
