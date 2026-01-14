@@ -37,6 +37,14 @@ We follow a specific naming convention for branches to maintain clarity and orga
 ### Reserved Branches
 - `develop` is reserved for maintainers and is not available for external contributors
 - It is used for integration testing and small development-stage changes
+- `develop` changes are fast-moving and may be unstable
+
+### Branch Flow Policy
+- In general, avoid direct commits to `main`. Most work lands in `develop` first and is later promoted to `main`
+- Start new feature branches from the stable `main` baseline
+- `develop` → `main` merges are handled by a repository maintainer without a PR
+- Any branch that merges into `develop` goes through a PR
+- Urgent fixes (for example, `hotfix`) may merge directly into `main`; `develop` is then synced from `main`
 
 ### Branch Examples
 Here are some examples of properly named branches
