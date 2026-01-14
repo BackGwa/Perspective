@@ -1,0 +1,52 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag points to main
+        id: verify
+        run: |
+          git fetch origin main --depth=1
+          target_sha=$(git rev-list -n 1 "$GITHUB_SHA")
+          if git merge-base --is-ancestor "$target_sha" "origin/main"; then
+            echo "on_main=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "on_main=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for custom release notes
+        id: notes
+        run: |
+          if [ -f .github/release-notes.md ]; then
+            echo "has_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_notes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create release (custom notes)
+        if: steps.verify.outputs.on_main == 'true' && steps.notes.outputs.has_notes == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: .github/release-notes.md
+
+      - name: Create release (auto notes)
+        if: steps.verify.outputs.on_main == 'true' && steps.notes.outputs.has_notes == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
