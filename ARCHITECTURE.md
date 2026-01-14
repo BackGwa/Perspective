@@ -20,6 +20,7 @@ sequenceDiagram
     HostLP->>MS: startCapture(camera|screen)
     MS->>MS: getUserMedia/getDisplayMedia
     MS->>MS: applyVideoContentHint(motion|detail)
+    MS->>MS: addMicrophoneTrackIfScreen()
     MS-->>HostLP: MediaStream
     HostLP->>SC: setStream(stream), setSessionSecret(password|empty), setSessionDomainPolicy(same-domain|all-domains)
     HostLP->>HostPage: navigate(/host)
@@ -112,13 +113,14 @@ flowchart TD
     G --> I["applyVideoContentHint(motion)"]
     H --> J[MediaStream obtained]
     I --> J
+    J --> K["If screen: add microphone track when available"]
 
-    J --> K[StreamContext: setStream]
-    K --> L[Navigate to HostPage]
-    L --> M[Initialize Peer]
-    M --> N[Get Peer ID]
-    N --> O[Generate QR Code & Link]
-    O --> P[Wait for Participants]
+    K --> L[StreamContext: setStream]
+    L --> M[Navigate to HostPage]
+    M --> N[Initialize Peer]
+    N --> O[Get Peer ID]
+    O --> P["Generate QR Code & Link (#/share?peer=...)"]
+    P --> Q[Wait for Participants]
 ```
 
 ### 2. Participant Connection
