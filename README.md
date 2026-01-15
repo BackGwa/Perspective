@@ -11,7 +11,7 @@ By utilizing a static client design, it ensures seamless connectivity across any
 [![GitHub Forks](https://img.shields.io/github/forks/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/network/members)
 [![GitHub Stars](https://img.shields.io/github/stars/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/stargazers)
 [![GitHub Issues](https://img.shields.io/github/issues/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/issues)
-[![License](https://img.shields.io/github/license/BackGwa/Agentic-Structure)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)  
+[![License](https://img.shields.io/github/license/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/blob/main/LICENSE)  
 [![Release](https://img.shields.io/github/v/release/BackGwa/Perspective)](https://github.com/BackGwa/Perspective/releases)
 [![CI/CD](https://github.com/BackGwa/Perspective/actions/workflows/ci.yml/badge.svg)](https://github.com/BackGwa/Perspective/actions)  
 
