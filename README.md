@@ -18,6 +18,11 @@ By utilizing a static client design, it ensures seamless connectivity across any
 <br>
 </div>
 
+> ![IMPORTANT]
+> **Do not use sites from unverified repositories**
+>
+> Confirm the repository's authenticity before using any deployment sites. Using unverified sites may expose your video and audio streams to third parties or allow execution of malicious scripts.
+
 ## Getting Started
 [![Perspective Stable Preview](https://img.shields.io/badge/preview-stable-1e90ff)](https://backgwa.github.io/Perspective/)
 [![Perspective Development Preview](https://img.shields.io/badge/preview-development-f39c12)](https://perspective-development.pages.dev/)
