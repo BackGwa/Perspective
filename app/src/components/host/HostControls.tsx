@@ -1,4 +1,4 @@
-import { useState, useRef, type RefObject } from 'react';
+import { useRef, type RefObject } from 'react';
 import {
   IconMicOn,
   IconMicOff,
@@ -19,6 +19,7 @@ interface HostControlsProps {
   isPaused: boolean;
   isMuted: boolean;
   isOverlayVisible: boolean;
+  isQRPanelVisible: boolean;
   overlayRef: RefObject<HTMLDivElement>;
   shareLink: string;
   sourceType: MediaSourceType | null;
@@ -28,12 +29,15 @@ interface HostControlsProps {
   onToggleAudio: () => void;
   onSwitchCamera: () => void;
   onStop: () => void;
+  onToggleQRPanel: () => void;
+  onCloseQRPanel: () => void;
 }
 
 export function HostControls({
   isPaused,
   isMuted,
   isOverlayVisible,
+  isQRPanelVisible,
   overlayRef,
   shareLink,
   sourceType,
@@ -42,26 +46,23 @@ export function HostControls({
   onToggleVideo,
   onToggleAudio,
   onSwitchCamera,
-  onStop
+  onStop,
+  onToggleQRPanel,
+  onCloseQRPanel
 }: HostControlsProps) {
-  const [showQRPanel, setShowQRPanel] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside(containerRef, () => setShowQRPanel(false));
-
-  const handleShare = () => {
-    setShowQRPanel(prev => !prev);
-  };
+  useClickOutside(containerRef, onCloseQRPanel);
 
   const isCameraMode = sourceType === 'camera';
-  const isOverlayActive = showQRPanel || isOverlayVisible;
+  const isOverlayActive = isQRPanelVisible || isOverlayVisible;
 
   return (
     <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''}`}>
       <div ref={containerRef} className="controls-overlay__content">
         <ClientCountBadge participantCount={participantCount} />
 
-        {showQRPanel && (
+        {isQRPanelVisible && (
           <QRSharePanel
             shareLink={shareLink}
           />
@@ -100,7 +101,7 @@ export function HostControls({
 
         <button
           className="control-button"
-          onClick={handleShare}
+          onClick={onToggleQRPanel}
           title={HOST_CONTROLS.SHARE_LINK}
         >
           <IconShare />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { RemoteStream } from '../components/participant/RemoteStream';
 import { ParticipantControls } from '../components/participant/ParticipantControls';
@@ -15,6 +15,7 @@ export function ParticipantPage() {
   const navigate = useNavigate();
   const hostPeerId = searchParams.get('peer');
   const [isMuted, setIsMuted] = useState(true);
+  const [isQRPanelVisible, setIsQRPanelVisible] = useState(false);
   const isLeavingRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
@@ -70,6 +71,14 @@ export function ParticipantPage() {
     setIsMuted(!isMuted);
   };
 
+  const handleToggleQRPanel = useCallback(() => {
+    setIsQRPanelVisible(prev => !prev);
+  }, []);
+
+  const handleCloseQRPanel = useCallback(() => {
+    setIsQRPanelVisible(false);
+  }, []);
+
 
   const handleLeave = () => {
     isLeavingRef.current = true;
@@ -96,7 +105,7 @@ export function ParticipantPage() {
   if (!hostPeerId) return null;
 
   return (
-    <div className={`participant-page ${isOverlayVisible ? 'participant-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
+    <div className={`participant-page ${isOverlayVisible || isQRPanelVisible ? 'participant-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <RemoteStream
         stream={remoteStream}
         isConnecting={isConnecting}
@@ -106,10 +115,13 @@ export function ParticipantPage() {
         <ParticipantControls
           isMuted={isMuted}
           isOverlayVisible={isOverlayVisible}
+          isQRPanelVisible={isQRPanelVisible}
           overlayRef={controlsOverlayRef}
           shareLink={getShareLink() || ''}
           onToggleAudio={handleToggleAudio}
           onLeave={handleLeave}
+          onToggleQRPanel={handleToggleQRPanel}
+          onCloseQRPanel={handleCloseQRPanel}
         />
       )}
     </div>

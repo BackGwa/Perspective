@@ -14,6 +14,7 @@ export function HostPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isWaitingForStream, setIsWaitingForStream] = useState(false);
+  const [isQRPanelVisible, setIsQRPanelVisible] = useState(false);
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const disconnectRef = useRef<() => void>();
@@ -24,6 +25,12 @@ export function HostPage() {
     navigate('/');
   }, [navigate]);
   const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
+  const handleToggleQRPanel = useCallback(() => {
+    setIsQRPanelVisible(prev => !prev);
+  }, []);
+  const handleCloseQRPanel = useCallback(() => {
+    setIsQRPanelVisible(false);
+  }, []);
 
   const {
     stream,
@@ -164,12 +171,13 @@ export function HostPage() {
   }
 
   return (
-    <div className={`host-page ${isOverlayVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
+    <div className={`host-page ${isOverlayVisible || isQRPanelVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <LocalPreview stream={stream} sourceType={sourceType} />
       <HostControls
         isPaused={isPaused}
         isMuted={isMuted}
         isOverlayVisible={isOverlayVisible}
+        isQRPanelVisible={isQRPanelVisible}
         overlayRef={controlsOverlayRef}
         shareLink={getShareLink() || ''}
         sourceType={sourceType}
@@ -179,6 +187,8 @@ export function HostPage() {
         onToggleAudio={handleToggleAudio}
         onSwitchCamera={handleSwitchCamera}
         onStop={handleStop}
+        onToggleQRPanel={handleToggleQRPanel}
+        onCloseQRPanel={handleCloseQRPanel}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useRef, type RefObject } from 'react';
+import { useRef, type RefObject } from 'react';
 import {
     IconSpeakerOn,
     IconSpeakerOff,
@@ -13,35 +13,36 @@ import '../../../styles/components/controls.scss';
 interface ParticipantControlsProps {
     isMuted: boolean;
     isOverlayVisible: boolean;
+    isQRPanelVisible: boolean;
     overlayRef: RefObject<HTMLDivElement>;
     shareLink: string;
     onToggleAudio: () => void;
     onLeave: () => void;
+    onToggleQRPanel: () => void;
+    onCloseQRPanel: () => void;
 }
 
 export function ParticipantControls({
     isMuted,
     isOverlayVisible,
+    isQRPanelVisible,
     overlayRef,
     shareLink,
     onToggleAudio,
-    onLeave
+    onLeave,
+    onToggleQRPanel,
+    onCloseQRPanel
 }: ParticipantControlsProps) {
-    const [showQRPanel, setShowQRPanel] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    useClickOutside(containerRef, () => setShowQRPanel(false));
+    useClickOutside(containerRef, onCloseQRPanel);
 
-    const handleShare = () => {
-        setShowQRPanel(prev => !prev);
-    };
-
-    const isOverlayActive = showQRPanel || isOverlayVisible;
+    const isOverlayActive = isQRPanelVisible || isOverlayVisible;
 
     return (
         <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''}`}>
             <div ref={containerRef} className="controls-overlay__content">
-                {showQRPanel && (
+                {isQRPanelVisible && (
                     <QRSharePanel
                         shareLink={shareLink}
                     />
@@ -57,7 +58,7 @@ export function ParticipantControls({
 
                 <button
                     className="control-button"
-                    onClick={handleShare}
+                    onClick={onToggleQRPanel}
                     title={PARTICIPANT_CONTROLS.SHARE_LINK}
                 >
                     <IconShare />
