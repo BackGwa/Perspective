@@ -18,7 +18,7 @@ By utilizing a static client design, it ensures seamless connectivity across any
 <br>
 </div>
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 > **Do not use sites from unverified repositories**
 >
 > Confirm the repository's authenticity before using any deployment sites. Using unverified sites may expose your video and audio streams to third parties or allow execution of malicious scripts.
