@@ -31,11 +31,11 @@
 }
 
 .controls-overlay__content--controls {
-  animation: overlaySwapControls var(--duration-slide) ease;
+  animation: overlaySwapControls var(--duration-slide) ease both;
 }
 
 .controls-overlay__content--chat {
-  animation: overlaySwapChat var(--duration-slide) ease;
+  animation: overlaySwapChat var(--duration-slide) ease both;
 }
 
 .controls-overlay__chat-input {
@@ -48,13 +48,15 @@
   color: var(--text-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
+  -webkit-backdrop-filter: blur(var(--blur-md));
   backdrop-filter: blur(var(--blur-md));
   transition: border-color var(--transition-base), background-color var(--transition-base);
   outline: none;
   box-sizing: border-box;
 
   &::placeholder {
-    color: var(--text-secondary);
+    color: var(--text-primary);
+    opacity: 0.8;
   }
 
   &:focus {
@@ -65,24 +67,20 @@
 
 @keyframes overlaySwapControls {
   from {
-    opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
 
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes overlaySwapChat {
   from {
-    opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
 
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -98,6 +96,7 @@
   background-color: rgba(var(--rgb-text-secondary), 0.1);
   border: 1px solid rgba(var(--rgb-text-secondary), 0.2);
   color: var(--text-secondary);
+  -webkit-backdrop-filter: blur(var(--blur-md));
   backdrop-filter: blur(var(--blur-md));
   transition: all var(--transition-base);
 
@@ -222,7 +221,7 @@
   }
 
   .controls-overlay__chat-input {
-    width: calc(var(--size-button-mobile) * 3 + var(--spacing-sm) * 2);
+    width: calc(var(--size-button-mobile) * 3 + var(--spacing-sm) * 4);
     height: var(--size-button-mobile);
     padding: var(--spacing-md);
     font-size: var(--font-size-sm);

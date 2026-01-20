@@ -72,7 +72,11 @@ export function HostControls({
 
   return (
     <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''}`}>
-      <div ref={containerRef} className={`controls-overlay__content ${isChatVisible ? 'controls-overlay__content--chat' : 'controls-overlay__content--controls'}`}>
+      <div
+        ref={containerRef}
+        key={isChatVisible ? 'chat' : 'controls'}
+        className={`controls-overlay__content ${isChatVisible ? 'controls-overlay__content--chat' : 'controls-overlay__content--controls'}`}
+      >
         {!isChatVisible && (
           <ClientCountBadge participantCount={participantCount} />
         )}
