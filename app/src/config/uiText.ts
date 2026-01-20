@@ -46,6 +46,12 @@ export const PARTICIPANT_CONTROLS = {
   LEAVE_SESSION: 'Leave Session',
 } as const;
 
+export const CHAT_OVERLAY = {
+  BACK: 'Back',
+  PLACEHOLDER: 'Type a message',
+  SEND: 'Send',
+} as const;
+
 export const QR_SHARE = {
   COPY_LINK: 'Copy Link',
   COPIED: 'Copied!',

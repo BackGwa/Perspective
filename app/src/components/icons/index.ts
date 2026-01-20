@@ -6,6 +6,7 @@ export { IconScreen } from './IconScreen';
 export { IconQr } from './IconQr';
 export { IconBack } from './IconBack';
 export { IconChat } from './IconChat';
+export { IconSend } from './IconSend';
 export { IconMicOn } from './IconMicOn';
 export { IconMicOff } from './IconMicOff';
 export { IconSpeakerOn } from './IconSpeakerOn';

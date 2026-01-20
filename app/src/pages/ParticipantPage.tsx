@@ -16,6 +16,7 @@ export function ParticipantPage() {
   const hostPeerId = searchParams.get('peer');
   const [isMuted, setIsMuted] = useState(true);
   const [isQRPanelVisible, setIsQRPanelVisible] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(false);
   const isLeavingRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
@@ -72,11 +73,24 @@ export function ParticipantPage() {
   };
 
   const handleToggleQRPanel = useCallback(() => {
-    setIsQRPanelVisible(prev => !prev);
+    setIsQRPanelVisible(prev => {
+      const nextState = !prev;
+      if (nextState) {
+        setIsChatVisible(false);
+      }
+      return nextState;
+    });
   }, []);
 
   const handleCloseQRPanel = useCallback(() => {
     setIsQRPanelVisible(false);
+  }, []);
+  const handleOpenChat = useCallback(() => {
+    setIsChatVisible(true);
+    setIsQRPanelVisible(false);
+  }, []);
+  const handleCloseChat = useCallback(() => {
+    setIsChatVisible(false);
   }, []);
 
 
@@ -105,7 +119,7 @@ export function ParticipantPage() {
   if (!hostPeerId) return null;
 
   return (
-    <div className={`participant-page ${isOverlayVisible || isQRPanelVisible ? 'participant-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
+    <div className={`participant-page ${isOverlayVisible || isQRPanelVisible || isChatVisible ? 'participant-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <RemoteStream
         stream={remoteStream}
         isConnecting={isConnecting}
@@ -116,12 +130,15 @@ export function ParticipantPage() {
           isMuted={isMuted}
           isOverlayVisible={isOverlayVisible}
           isQRPanelVisible={isQRPanelVisible}
+          isChatVisible={isChatVisible}
           overlayRef={controlsOverlayRef}
           shareLink={getShareLink() || ''}
           onToggleAudio={handleToggleAudio}
           onLeave={handleLeave}
           onToggleQRPanel={handleToggleQRPanel}
           onCloseQRPanel={handleCloseQRPanel}
+          onOpenChat={handleOpenChat}
+          onCloseChat={handleCloseChat}
         />
       )}
     </div>

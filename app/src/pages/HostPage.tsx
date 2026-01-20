@@ -15,6 +15,7 @@ export function HostPage() {
   const location = useLocation();
   const [isWaitingForStream, setIsWaitingForStream] = useState(false);
   const [isQRPanelVisible, setIsQRPanelVisible] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(false);
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const disconnectRef = useRef<() => void>();
@@ -26,10 +27,23 @@ export function HostPage() {
   }, [navigate]);
   const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
   const handleToggleQRPanel = useCallback(() => {
-    setIsQRPanelVisible(prev => !prev);
+    setIsQRPanelVisible(prev => {
+      const nextState = !prev;
+      if (nextState) {
+        setIsChatVisible(false);
+      }
+      return nextState;
+    });
   }, []);
   const handleCloseQRPanel = useCallback(() => {
     setIsQRPanelVisible(false);
+  }, []);
+  const handleOpenChat = useCallback(() => {
+    setIsChatVisible(true);
+    setIsQRPanelVisible(false);
+  }, []);
+  const handleCloseChat = useCallback(() => {
+    setIsChatVisible(false);
   }, []);
 
   const {
@@ -171,13 +185,14 @@ export function HostPage() {
   }
 
   return (
-    <div className={`host-page ${isOverlayVisible || isQRPanelVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
+    <div className={`host-page ${isOverlayVisible || isQRPanelVisible || isChatVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
       <LocalPreview stream={stream} sourceType={sourceType} />
       <HostControls
         isPaused={isPaused}
         isMuted={isMuted}
         isOverlayVisible={isOverlayVisible}
         isQRPanelVisible={isQRPanelVisible}
+        isChatVisible={isChatVisible}
         overlayRef={controlsOverlayRef}
         shareLink={getShareLink() || ''}
         sourceType={sourceType}
@@ -189,6 +204,8 @@ export function HostPage() {
         onStop={handleStop}
         onToggleQRPanel={handleToggleQRPanel}
         onCloseQRPanel={handleCloseQRPanel}
+        onOpenChat={handleOpenChat}
+        onCloseChat={handleCloseChat}
       />
     </div>
   );
