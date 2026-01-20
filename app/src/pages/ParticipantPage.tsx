@@ -19,7 +19,7 @@ export function ParticipantPage() {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const isLeavingRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
-  const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
+  const { isOverlayVisible, handlePointerDown, showOverlay } = useControlsOverlay(controlsOverlayRef);
 
   const { connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer } = useStreamContext();
 
@@ -91,7 +91,8 @@ export function ParticipantPage() {
   }, []);
   const handleCloseChat = useCallback(() => {
     setIsChatVisible(false);
-  }, []);
+    showOverlay();
+  }, [showOverlay]);
 
 
   const handleLeave = () => {

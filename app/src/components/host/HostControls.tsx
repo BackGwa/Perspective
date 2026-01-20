@@ -15,6 +15,7 @@ import { QRSharePanel } from '../shared/QRSharePanel';
 import { ClientCountBadge } from './ClientCountBadge';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { CHAT_OVERLAY, HOST_CONTROLS } from '../../config/uiText';
+import { TEST_CHAT_MESSAGES } from '../../config/chat';
 import '../../../styles/components/controls.scss';
 import type { MediaSourceType } from '../../types/media.types';
 
@@ -71,7 +72,23 @@ export function HostControls({
   const isOverlayActive = isQRPanelVisible || isChatVisible || isOverlayVisible;
 
   return (
-    <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''}`}>
+    <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''} ${isChatVisible ? 'controls-overlay--chat' : ''}`}>
+      {isChatVisible && (
+        <div className="controls-overlay__chat-panel">
+          <div className="controls-overlay__chat-messages">
+            <div className="controls-overlay__chat-messages-inner">
+              {TEST_CHAT_MESSAGES.map(message => (
+                <div
+                  key={message.id}
+                  className={`controls-overlay__chat-message ${message.role === 'host' ? 'controls-overlay__chat-message--right' : 'controls-overlay__chat-message--left'}`}
+                >
+                  {message.text}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <div
         ref={containerRef}
         key={isChatVisible ? 'chat' : 'controls'}
@@ -82,7 +99,7 @@ export function HostControls({
         )}
 
         {isChatVisible ? (
-          <>
+          <div className="controls-overlay__chat-row">
             <button
               className="control-button"
               onClick={onCloseChat}
@@ -105,7 +122,7 @@ export function HostControls({
               <IconSend />
               <span className="control-tooltip">{CHAT_OVERLAY.SEND}</span>
             </button>
-          </>
+          </div>
         ) : (
           <>
             {isQRPanelVisible && (

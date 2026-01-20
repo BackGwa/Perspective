@@ -1,6 +1,9 @@
 @import '../variables.scss';
 
 .controls-overlay {
+  --controls-row-size: var(--control-size-md);
+  --controls-overlay-padding-bottom: var(--spacing-xl);
+  --controls-chat-max-width: calc(var(--control-size-md) * 5 + var(--spacing-md) * 4);
   position: absolute;
   bottom: 0;
   left: 0;
@@ -23,6 +26,10 @@
   }
 }
 
+.controls-overlay--chat {
+  background: none;
+}
+
 .controls-overlay__content {
   position: relative;
   display: flex;
@@ -36,6 +43,89 @@
 
 .controls-overlay__content--chat {
   animation: overlaySwapChat var(--duration-slide) ease both;
+  width: 100%;
+  max-width: var(--controls-chat-max-width);
+  margin: 0 auto;
+  justify-content: center;
+  z-index: 1;
+}
+
+.controls-overlay__chat-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--size-controls-chat-panel-height);
+  height: var(--size-controls-chat-panel-height-dynamic);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--spacing-lg) 0 calc(var(--controls-row-size) + var(--controls-overlay-padding-bottom));
+  background: var(--gradient-controls-overlay-chat);
+  box-sizing: border-box;
+  animation: chatPanelReveal var(--duration-slide) ease both;
+  z-index: 0;
+}
+
+.controls-overlay__chat-messages {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+  max-width: var(--controls-chat-max-width);
+  padding: 0 var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  align-self: center;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.controls-overlay__chat-messages::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.controls-overlay__chat-messages-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  min-height: 100%;
+}
+
+.controls-overlay__chat-message {
+  max-width: var(--size-controls-chat-message-max-width);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-controls-chat-message);
+  color: var(--text-primary);
+  text-shadow: var(--shadow-text-controls);
+  word-break: break-word;
+}
+
+.controls-overlay__chat-message--left {
+  align-self: flex-start;
+  text-align: left;
+}
+
+.controls-overlay__chat-message--right {
+  align-self: flex-end;
+  text-align: right;
+  color: inherit;
+}
+
+.controls-overlay__chat-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.controls-overlay__chat-row .control-button,
+.controls-overlay__chat-row .controls-overlay__chat-input {
+  flex: 0 0 auto;
 }
 
 .controls-overlay__chat-input {
@@ -46,6 +136,7 @@
   background-color: rgba(var(--rgb-text-secondary), 0.1);
   border: 1px solid rgba(var(--rgb-text-secondary), 0.2);
   color: var(--text-primary);
+  text-shadow: var(--shadow-text-controls);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   -webkit-backdrop-filter: blur(var(--blur-md));
@@ -56,7 +147,8 @@
 
   &::placeholder {
     color: var(--text-primary);
-    opacity: 0.8;
+    opacity: 1;
+    text-shadow: var(--shadow-text-controls-muted);
   }
 
   &:focus {
@@ -67,7 +159,7 @@
 
 @keyframes overlaySwapControls {
   from {
-    transform: translateY(12px);
+    transform: translateY(var(--offset-controls-overlay-reveal));
   }
 
   to {
@@ -77,10 +169,22 @@
 
 @keyframes overlaySwapChat {
   from {
-    transform: translateY(12px);
+    transform: translateY(var(--offset-controls-overlay-reveal));
   }
 
   to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes chatPanelReveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--offset-controls-overlay-reveal));
+  }
+
+  to {
+    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -184,6 +288,9 @@
 
 @media (max-width: $breakpoint-desktop) {
   .controls-overlay {
+    --controls-row-size: var(--size-button-mobile);
+    --controls-overlay-padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
+    --controls-chat-max-width: calc(var(--size-button-mobile) * 5 + var(--spacing-md) * 4);
     position: relative;
     opacity: 0;
     background: none;
@@ -225,5 +332,17 @@
     height: var(--size-button-mobile);
     padding: var(--spacing-md);
     font-size: var(--font-size-sm);
+  }
+
+  .controls-overlay__chat-messages {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .controls-overlay__chat-row {
+    gap: var(--spacing-md);
+  }
+
+  .controls-overlay__content--chat {
+    max-width: var(--controls-chat-max-width);
   }
 }

@@ -25,7 +25,7 @@ export function HostPage() {
     disconnectRef.current?.();
     navigate('/');
   }, [navigate]);
-  const { isOverlayVisible, handlePointerDown } = useControlsOverlay(controlsOverlayRef);
+  const { isOverlayVisible, handlePointerDown, showOverlay } = useControlsOverlay(controlsOverlayRef);
   const handleToggleQRPanel = useCallback(() => {
     setIsQRPanelVisible(prev => {
       const nextState = !prev;
@@ -44,7 +44,8 @@ export function HostPage() {
   }, []);
   const handleCloseChat = useCallback(() => {
     setIsChatVisible(false);
-  }, []);
+    showOverlay();
+  }, [showOverlay]);
 
   const {
     stream,

@@ -11,6 +11,7 @@ import {
 import { QRSharePanel } from '../shared/QRSharePanel';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { CHAT_OVERLAY, PARTICIPANT_CONTROLS } from '../../config/uiText';
+import { TEST_CHAT_MESSAGES } from '../../config/chat';
 import '../../../styles/components/controls.scss';
 
 interface ParticipantControlsProps {
@@ -53,14 +54,30 @@ export function ParticipantControls({
     const isOverlayActive = isQRPanelVisible || isChatVisible || isOverlayVisible;
 
     return (
-        <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''}`}>
+        <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''} ${isChatVisible ? 'controls-overlay--chat' : ''}`}>
+            {isChatVisible && (
+                <div className="controls-overlay__chat-panel">
+                    <div className="controls-overlay__chat-messages">
+                        <div className="controls-overlay__chat-messages-inner">
+                            {TEST_CHAT_MESSAGES.map(message => (
+                                <div
+                                    key={message.id}
+                                    className={`controls-overlay__chat-message ${message.role === 'host' ? 'controls-overlay__chat-message--right' : 'controls-overlay__chat-message--left'}`}
+                                >
+                                    {message.text}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
             <div
                 ref={containerRef}
                 key={isChatVisible ? 'chat' : 'controls'}
                 className={`controls-overlay__content ${isChatVisible ? 'controls-overlay__content--chat' : 'controls-overlay__content--controls'}`}
             >
                 {isChatVisible ? (
-                    <>
+                    <div className="controls-overlay__chat-row">
                         <button
                             className="control-button"
                             onClick={onCloseChat}
@@ -83,7 +100,7 @@ export function ParticipantControls({
                             <IconSend />
                             <span className="control-tooltip">{CHAT_OVERLAY.SEND}</span>
                         </button>
-                    </>
+                    </div>
                 ) : (
                     <>
                         {isQRPanelVisible && (
