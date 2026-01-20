@@ -6,6 +6,7 @@ import {
   IconMonitorOff,
   IconShareMD as IconShare,
   IconStop,
+  IconChat,
   IconCameraSwitch
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
@@ -67,6 +68,14 @@ export function HostControls({
             shareLink={shareLink}
           />
         )}
+
+        <button
+          className="control-button"
+          title={HOST_CONTROLS.CHAT}
+        >
+          <IconChat />
+          <span className="control-tooltip">{HOST_CONTROLS.CHAT}</span>
+        </button>
 
         {/* Camera switch button - only shown in camera mode, leftmost position */}
         {isCameraMode && (

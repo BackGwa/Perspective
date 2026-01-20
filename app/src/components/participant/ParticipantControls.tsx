@@ -3,6 +3,7 @@ import {
     IconSpeakerOn,
     IconSpeakerOff,
     IconShareMD as IconShare,
+    IconChat,
     IconExit
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
@@ -47,6 +48,13 @@ export function ParticipantControls({
                         shareLink={shareLink}
                     />
                 )}
+                <button
+                    className="control-button"
+                    title={PARTICIPANT_CONTROLS.CHAT}
+                >
+                    <IconChat />
+                    <span className="control-tooltip">{PARTICIPANT_CONTROLS.CHAT}</span>
+                </button>
                 <button
                     className={`control-button ${isMuted ? 'control-button--danger' : ''}`}
                     onClick={onToggleAudio}
