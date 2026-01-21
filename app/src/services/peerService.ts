@@ -176,6 +176,32 @@ class PeerService {
     }
   }
 
+  broadcastDataMessage(message: unknown): void {
+    this.dataConnections.forEach((conn, peerId) => {
+      if (conn.open) {
+        this.sendDataMessage(peerId, message);
+      }
+    });
+  }
+
+  getDataConnection(peerId: string): DataConnection | undefined {
+    return this.dataConnections.get(peerId);
+  }
+
+  getAllParticipantIds(): string[] {
+    return Array.from(this.dataConnections.keys());
+  }
+
+  setDataConnection(peerId: string, connection: DataConnection): void {
+    console.log('[PeerService] Manually registering data connection for:', peerId);
+    this.dataConnections.set(peerId, connection);
+
+    connection.on('close', () => {
+      console.log('[PeerService] Manual data connection closed with:', peerId);
+      this.dataConnections.delete(peerId);
+    });
+  }
+
   applyVideoDegradationPreference(call: MediaConnection, preference: RTCDegradationPreference): void {
     const sender = call.peerConnection
       .getSenders()

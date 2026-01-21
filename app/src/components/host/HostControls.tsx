@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from 'react';
+import { useRef, useState, useEffect, type RefObject } from 'react';
 import {
   IconMicOn,
   IconMicOff,
@@ -13,9 +13,10 @@ import {
 } from '../icons';
 import { QRSharePanel } from '../shared/QRSharePanel';
 import { ClientCountBadge } from './ClientCountBadge';
+import { UnreadBadge } from '../shared/UnreadBadge';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { useChatContext } from '../../contexts/ChatContext';
 import { CHAT_OVERLAY, HOST_CONTROLS } from '../../config/uiText';
-import { TEST_CHAT_MESSAGES } from '../../config/chat';
 import '../../../styles/components/controls.scss';
 import type { MediaSourceType } from '../../types/media.types';
 
@@ -30,6 +31,7 @@ interface HostControlsProps {
   sourceType: MediaSourceType | null;
   canSwitchCamera: boolean;
   participantCount: number;
+  unreadCount: number;
   onToggleVideo: () => void;
   onToggleAudio: () => void;
   onSwitchCamera: () => void;
@@ -38,6 +40,7 @@ interface HostControlsProps {
   onCloseQRPanel: () => void;
   onOpenChat: () => void;
   onCloseChat: () => void;
+  onSendMessage: (text: string) => void;
 }
 
 export function HostControls({
@@ -51,6 +54,7 @@ export function HostControls({
   sourceType,
   canSwitchCamera,
   participantCount,
+  unreadCount,
   onToggleVideo,
   onToggleAudio,
   onSwitchCamera,
@@ -58,14 +62,45 @@ export function HostControls({
   onToggleQRPanel,
   onCloseQRPanel,
   onOpenChat,
-  onCloseChat
+  onCloseChat,
+  onSendMessage
 }: HostControlsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState('');
+  const { messages, connectionTimestamp } = useChatContext();
+
+  // Filter messages by connection timestamp
+  const visibleMessages = messages.filter(
+    msg => connectionTimestamp && msg.timestamp >= connectionTimestamp
+  );
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (isChatVisible) {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages, isChatVisible]);
+
+  const handleSendClick = () => {
+    if (inputValue.trim()) {
+      onSendMessage(inputValue);
+      setInputValue('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendClick();
+    }
+  };
 
   useClickOutside(containerRef, () => {
     if (isChatVisible) return;
     onCloseQRPanel();
-    onCloseChat();
   });
 
   const isCameraMode = sourceType === 'camera';
@@ -75,14 +110,15 @@ export function HostControls({
     <div ref={overlayRef} className={`controls-overlay ${isOverlayActive ? 'controls-overlay--visible' : ''} ${isChatVisible ? 'controls-overlay--chat' : ''}`}>
       {isChatVisible && (
         <div className="controls-overlay__chat-panel">
-          <div className="controls-overlay__chat-messages">
+          <div ref={messagesContainerRef} className="controls-overlay__chat-messages">
             <div className="controls-overlay__chat-messages-inner">
-              {TEST_CHAT_MESSAGES.map(message => (
+              {visibleMessages.map(message => (
                 <div
                   key={message.id}
                   className={`controls-overlay__chat-message ${message.role === 'host' ? 'controls-overlay__chat-message--right' : 'controls-overlay__chat-message--left'}`}
                 >
                   {message.text}
+                  {message.encrypted && <span style={{ marginLeft: '4px' }}>🔒</span>}
                 </div>
               ))}
             </div>
@@ -113,9 +149,15 @@ export function HostControls({
               className="controls-overlay__chat-input"
               placeholder={CHAT_OVERLAY.PLACEHOLDER}
               type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              maxLength={128}
             />
             <button
               className="control-button"
+              onClick={handleSendClick}
+              disabled={!inputValue.trim()}
               title={CHAT_OVERLAY.SEND}
               type="button"
             >
@@ -131,14 +173,17 @@ export function HostControls({
               />
             )}
 
-            <button
-              className="control-button"
-              onClick={onOpenChat}
-              title={HOST_CONTROLS.CHAT}
-            >
-              <IconChat />
-              <span className="control-tooltip">{HOST_CONTROLS.CHAT}</span>
-            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                className="control-button"
+                onClick={onOpenChat}
+                title={HOST_CONTROLS.CHAT}
+              >
+                <IconChat />
+                <span className="control-tooltip">{HOST_CONTROLS.CHAT}</span>
+              </button>
+              <UnreadBadge count={unreadCount} />
+            </div>
 
             {/* Camera switch button - only shown in camera mode, leftmost position */}
             {isCameraMode && (
@@ -194,5 +239,3 @@ export function HostControls({
     </div>
   );
 }
-
-

@@ -153,11 +153,17 @@
   .participant-page--controls-visible {
     .remote-stream {
       margin: var(--spacing-md);
+      margin-bottom: calc(var(--spacing-controls-overlay-height) + var(--spacing-md));
+      transition: margin var(--duration-slide);
     }
 
     .remote-stream__frame {
       border-radius: var(--border-radius-lg);
     }
+  }
+
+  .remote-stream {
+    transition: margin var(--duration-slide);
   }
 
   .remote-stream {

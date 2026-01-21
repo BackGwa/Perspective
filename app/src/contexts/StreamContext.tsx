@@ -3,6 +3,7 @@ import type { StreamState, MediaSourceType } from '../types/media.types';
 import type { ConnectionStatus } from '../types/peer.types';
 import type { DomainPolicy } from '../types/session.types';
 import type Peer from 'peerjs';
+import type { DataConnection } from 'peerjs';
 
 interface StreamContextType {
   streamState: StreamState;
@@ -30,6 +31,10 @@ interface StreamContextType {
   // Participant peer instance (reused across navigation)
   participantPeer: Peer | null;
   setParticipantPeer: (peer: Peer | null) => void;
+
+  // Participant data connection to host (reused across navigation)
+  participantHostConnection: DataConnection | null;
+  setParticipantHostConnection: (connection: DataConnection | null) => void;
 }
 
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
@@ -50,6 +55,7 @@ export function StreamProvider({ children }: { children: ReactNode }) {
   const [sessionSecret, setSessionSecret] = useState<string | null>(null);
   const [sessionDomainPolicy, setSessionDomainPolicy] = useState<DomainPolicy>('same-domain');
   const [participantPeer, setParticipantPeer] = useState<Peer | null>(null);
+  const [participantHostConnection, setParticipantHostConnection] = useState<DataConnection | null>(null);
 
   const setStream = (stream: MediaStream | null, sourceType: MediaSourceType | null) => {
     console.log('[StreamContext] setStream called - stream:', stream, 'sourceType:', sourceType);
@@ -110,7 +116,9 @@ export function StreamProvider({ children }: { children: ReactNode }) {
         sessionDomainPolicy,
         setSessionDomainPolicy,
         participantPeer,
-        setParticipantPeer
+        setParticipantPeer,
+        participantHostConnection,
+        setParticipantHostConnection
       }}
     >
       {children}

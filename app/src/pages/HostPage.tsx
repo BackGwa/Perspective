@@ -5,12 +5,15 @@ import { HostControls } from '../components/host/HostControls';
 import { useMediaStream } from '../hooks/useMediaStream';
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { useControlsOverlay } from '../hooks/useControlsOverlay';
+import { useChatMessaging } from '../hooks/useChatMessaging';
+import { ChatProvider, useChatContext } from '../contexts/ChatContext';
+import { useStreamContext } from '../contexts/StreamContext';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { navigateWithError } from '../utils/navigationHelpers';
 import { TIMING } from '../config/timing';
 import '../../styles/components/host.scss';
 
-export function HostPage() {
+function HostPageInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isWaitingForStream, setIsWaitingForStream] = useState(false);
@@ -19,13 +22,16 @@ export function HostPage() {
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const disconnectRef = useRef<() => void>();
+  const { peerId, connectionStatus, sessionSecret } = useStreamContext();
+  const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
+
   const handleStreamEnded = useCallback(() => {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
     disconnectRef.current?.();
     navigate('/');
   }, [navigate]);
-  const { isOverlayVisible, handlePointerDown, showOverlay } = useControlsOverlay(controlsOverlayRef);
+  const { isOverlayVisible, showOverlay, hideOverlay } = useControlsOverlay(controlsOverlayRef);
   const handleToggleQRPanel = useCallback(() => {
     setIsQRPanelVisible(prev => {
       const nextState = !prev;
@@ -41,11 +47,34 @@ export function HostPage() {
   const handleOpenChat = useCallback(() => {
     setIsChatVisible(true);
     setIsQRPanelVisible(false);
-  }, []);
+    setChatOpen(true);
+  }, [setChatOpen]);
   const handleCloseChat = useCallback(() => {
     setIsChatVisible(false);
+    setChatOpen(false);
     showOverlay();
-  }, [showOverlay]);
+  }, [setChatOpen, showOverlay]);
+  const handleOverlayPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (isChatVisible) return;
+
+    const targetNode = event.target as Node | null;
+    const overlayElement = controlsOverlayRef.current;
+    const clickedInsideOverlay = !!(overlayElement && targetNode && overlayElement.contains(targetNode));
+
+    if (isOverlayVisible || isQRPanelVisible) {
+      if (clickedInsideOverlay) {
+        showOverlay();
+      } else {
+        handleCloseQRPanel();
+        hideOverlay();
+      }
+      return;
+    }
+
+    if (!clickedInsideOverlay) {
+      showOverlay();
+    }
+  }, [handleCloseQRPanel, hideOverlay, isChatVisible, isOverlayVisible, isQRPanelVisible, showOverlay]);
 
   const {
     stream,
@@ -74,11 +103,27 @@ export function HostPage() {
     console.log('[HostPage] Render - location.state:', location.state);
   });
 
+  // Initialize chat messaging
+  const { sendMessage, handleIncomingMessage } = useChatMessaging({
+    role: 'host',
+    peerId,
+    sessionSecret,
+    connectionTimestamp: connectionTimestamp || 0
+  });
+
   const { disconnect, getShareLink, participantCount } = usePeerConnection({
     role: 'host',
     stream,
-    sourceType
+    sourceType,
+    onChatMessage: handleIncomingMessage
   });
+
+  // Set connection timestamp when host starts sharing
+  useEffect(() => {
+    if (connectionStatus === 'waiting_for_peer' && !connectionTimestamp) {
+      setConnectionTimestamp(Date.now());
+    }
+  }, [connectionStatus, connectionTimestamp, setConnectionTimestamp]);
 
   useEffect(() => {
     disconnectRef.current = disconnect;
@@ -186,7 +231,7 @@ export function HostPage() {
   }
 
   return (
-    <div className={`host-page ${isOverlayVisible || isQRPanelVisible || isChatVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handlePointerDown}>
+    <div className={`host-page ${isOverlayVisible || isQRPanelVisible || isChatVisible ? 'host-page--controls-visible' : ''}`} onPointerDown={handleOverlayPointerDown}>
       <LocalPreview stream={stream} sourceType={sourceType} />
       <HostControls
         isPaused={isPaused}
@@ -199,6 +244,7 @@ export function HostPage() {
         sourceType={sourceType}
         canSwitchCamera={canSwitchCamera}
         participantCount={participantCount}
+        unreadCount={unreadCount}
         onToggleVideo={handleToggleVideo}
         onToggleAudio={handleToggleAudio}
         onSwitchCamera={handleSwitchCamera}
@@ -207,7 +253,16 @@ export function HostPage() {
         onCloseQRPanel={handleCloseQRPanel}
         onOpenChat={handleOpenChat}
         onCloseChat={handleCloseChat}
+        onSendMessage={sendMessage}
       />
     </div>
+  );
+}
+
+export function HostPage() {
+  return (
+    <ChatProvider>
+      <HostPageInner />
+    </ChatProvider>
   );
 }

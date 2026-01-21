@@ -40,6 +40,7 @@ export function LandingPage() {
     const {
         setSessionSecret,
         setParticipantPeer,
+        setParticipantHostConnection,
         setRemoteStream,
         setConnectionStatus,
         sessionDomainPolicy,
@@ -62,6 +63,7 @@ export function LandingPage() {
     const [participantPassword, setParticipantPassword] = useState('');
     const [isAwaitingPasswordVerification, setIsAwaitingPasswordVerification] = useState(false);
     const [dataConnectionForVerification, setDataConnectionForVerification] = useState<DataConnection | null>(null);
+    const dataConnectionForVerificationRef = useRef<DataConnection | null>(null);
     const hostPeerIdForVerificationRef = useRef<string | null>(null);
     const tempPeerForVerificationRef = useRef<Peer | null>(null);
 
@@ -203,13 +205,21 @@ export function LandingPage() {
             setIsConnecting(false);
             setIsAwaitingPasswordVerification(false);
 
-            // Save peer to context for reuse in ParticipantPage
+            // Save peer and data connection to context for reuse in ParticipantPage
             const currentTempPeer = tempPeerForVerificationRef.current;
             if (currentTempPeer) {
                 console.log('[LandingPage] Saving peer to context for reuse');
                 setParticipantPeer(currentTempPeer);
                 // Don't destroy the peer - it will be reused
                 tempPeerForVerificationRef.current = null;
+            }
+
+            // Save data connection to context for reuse
+            const currentDataConnection = dataConnectionForVerificationRef.current;
+            if (currentDataConnection) {
+                console.log('[LandingPage] Saving data connection to context for reuse');
+                setParticipantHostConnection(currentDataConnection);
+                dataConnectionForVerificationRef.current = null;
             }
 
             const currentHostPeerId = hostPeerIdForVerificationRef.current;
@@ -232,6 +242,7 @@ export function LandingPage() {
             setIsAwaitingPasswordVerification(false);
             hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
+            dataConnectionForVerificationRef.current = null;
             setMenuState('root');
             setSessionId('');
         }
@@ -352,6 +363,7 @@ export function LandingPage() {
             setIsAwaitingPasswordVerification(false);
             hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
+            dataConnectionForVerificationRef.current = null;
             setParticipantPassword('');
             setError(null);
             setMenuState('root');
@@ -504,6 +516,7 @@ export function LandingPage() {
                 dataConn.on('open', () => {
                     console.log('[LandingPage] Data connection established for verification');
                     setDataConnectionForVerification(dataConn);
+                    dataConnectionForVerificationRef.current = dataConn;
 
                     const joinRequestMessage: SessionJoinRequestMessage = {
                         type: 'SESSION_JOIN_REQUEST',
@@ -529,6 +542,7 @@ export function LandingPage() {
                             setIsAwaitingPasswordVerification(false);
                             hostPeerIdForVerificationRef.current = null;
                             setDataConnectionForVerification(null);
+                            dataConnectionForVerificationRef.current = null;
                             const cleanedPeer = cleanupParticipantPeer(tempPeer);
                             tempPeerForVerificationRef.current = cleanedPeer;
                             dataConn.close();

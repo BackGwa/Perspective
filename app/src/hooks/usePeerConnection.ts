@@ -13,6 +13,7 @@ interface UsePeerConnectionOptions {
   sourceType?: MediaSourceType | null;
   hostPeerId?: string | null;
   existingPeer?: Peer | null; // Reuse existing peer for participant
+  onChatMessage?: (data: unknown) => void; // Chat message handler
 }
 
 const getDegradationPreference = (sourceType?: MediaSourceType | null): RTCDegradationPreference => {
@@ -21,7 +22,7 @@ const getDegradationPreference = (sourceType?: MediaSourceType | null): RTCDegra
   return 'balanced';
 };
 
-export function usePeerConnection({ role, stream, sourceType, hostPeerId, existingPeer }: UsePeerConnectionOptions) {
+export function usePeerConnection({ role, stream, sourceType, hostPeerId, existingPeer, onChatMessage }: UsePeerConnectionOptions) {
   const {
     peerId,
     setPeerId,
@@ -29,7 +30,8 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     setConnectionStatus,
     setRemoteStream,
     sessionSecret,
-    sessionDomainPolicy
+    sessionDomainPolicy,
+    participantHostConnection
   } = useStreamContext();
 
   const participantsRef = useRef<Map<string, MediaConnection>>(new Map());
@@ -97,6 +99,13 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
           // Setup password listener - this will handle approval/rejection
           pendingPasswordApprovalRef.current.add(participantId);
           setupPasswordListener(participantId, dataConn);
+
+          // Setup chat message listener
+          if (onChatMessage) {
+            dataConn.on('data', (data: unknown) => {
+              onChatMessage(data);
+            });
+          }
         },
         onDisconnect: () => {
           setConnectionStatus('disconnected');
@@ -127,6 +136,17 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
       // Set peer ID from existing peer
       if (existingPeer.id) {
         setPeerId(existingPeer.id);
+      }
+
+      // Register existing data connection with peerService and setup chat listener
+      if (onChatMessage && hostPeerId && participantHostConnection) {
+        console.log('[usePeerConnection] Registering existing data connection with peerService');
+        peerService.setDataConnection(hostPeerId, participantHostConnection);
+
+        // Setup chat message listener
+        participantHostConnection.on('data', (data: unknown) => {
+          onChatMessage(data);
+        });
       }
 
       // Add call listener - host may call after we navigate here
@@ -176,8 +196,15 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
           setConnectionStatus('connecting');
 
           peerService.connectToPeer(hostPeerId)
-            .then(() => {
+            .then((dataConn) => {
               console.log('Connected to host, waiting for call...');
+
+              // Setup chat message listener
+              if (onChatMessage) {
+                dataConn.on('data', (data: unknown) => {
+                  onChatMessage(data);
+                });
+              }
             })
             .catch((error) => {
               console.error('Failed to connect to host:', error);
@@ -218,7 +245,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
       setConnectionStatus('failed');
       hasInitialized.current = false;
     }
-  }, [role, hostPeerId, existingPeer, setPeerId, setConnectionStatus, setRemoteStream]);
+  }, [role, hostPeerId, existingPeer, setPeerId, setConnectionStatus, setRemoteStream, participantHostConnection, onChatMessage]);
 
   const disconnect = useCallback(() => {
     peerService.destroyPeer();

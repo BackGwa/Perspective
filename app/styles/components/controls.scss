@@ -20,8 +20,13 @@
   transition: opacity var(--transition-base);
   pointer-events: auto;
 
-  &:hover,
   &--visible {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .controls-overlay:hover {
     opacity: 1;
   }
 }
@@ -169,23 +174,21 @@
 
 @keyframes overlaySwapChat {
   from {
-    transform: translateY(var(--offset-controls-overlay-reveal));
+    opacity: 0;
   }
 
   to {
-    transform: translateY(0);
+    opacity: 1;
   }
 }
 
 @keyframes chatPanelReveal {
   from {
     opacity: 0;
-    transform: translateY(var(--offset-controls-overlay-reveal));
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -291,25 +294,23 @@
     --controls-row-size: var(--size-button-mobile);
     --controls-overlay-padding-bottom: calc(var(--spacing-md) + env(safe-area-inset-bottom));
     --controls-chat-max-width: calc(var(--size-button-mobile) * 5 + var(--spacing-md) * 4);
-    position: relative;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     opacity: 0;
     background: none;
-    height: auto;
+    height: var(--spacing-controls-overlay-height);
     gap: var(--spacing-sm);
-    padding: 0;
-    max-height: 0;
-    transform: translateY(24px);
-    overflow: hidden;
+    padding: 0 0 var(--controls-overlay-padding-bottom);
+    transform: translateY(var(--offset-controls-overlay-reveal));
     pointer-events: none;
-    transition: max-height var(--duration-slide), padding var(--duration-slide), opacity var(--transition-base), transform var(--duration-slide);
+    transition: opacity var(--transition-base), transform var(--duration-slide);
   }
 
   .controls-overlay.controls-overlay--visible {
     opacity: 1;
-    padding: var(--spacing-md) 0 calc(var(--spacing-md) + env(safe-area-inset-bottom));
-    max-height: calc(var(--spacing-controls-overlay-height) + env(safe-area-inset-bottom));
     transform: translateY(0);
-    overflow: visible;
     pointer-events: auto;
   }
 

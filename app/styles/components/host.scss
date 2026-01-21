@@ -138,11 +138,17 @@
   .host-page--controls-visible {
     .local-preview {
       margin: var(--spacing-md);
+      margin-bottom: calc(var(--spacing-controls-overlay-height) + var(--spacing-md));
+      transition: margin var(--duration-slide);
     }
 
     .local-preview__frame {
       border-radius: var(--border-radius-lg);
     }
+  }
+
+  .local-preview {
+    transition: margin var(--duration-slide);
   }
 
   .local-preview {
