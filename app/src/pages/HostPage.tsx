@@ -89,21 +89,12 @@ function HostPageInner() {
     switchCamera
   } = useMediaStream({ onStreamEnded: handleStreamEnded });
 
-  // Store latest functions in refs for cleanup
   const stopCaptureRef = useRef(stopCapture);
 
   useEffect(() => {
     stopCaptureRef.current = stopCapture;
   }, [stopCapture]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[HostPage] Render - stream:', stream);
-    console.log('[HostPage] Render - sourceType:', sourceType);
-    console.log('[HostPage] Render - location.state:', location.state);
-  });
-
-  // Initialize chat messaging
   const { sendMessage, handleIncomingMessage } = useChatMessaging({
     role: 'host',
     peerId,
@@ -118,7 +109,6 @@ function HostPageInner() {
     onChatMessage: handleIncomingMessage
   });
 
-  // Set connection timestamp when host starts sharing
   useEffect(() => {
     if (connectionStatus === 'waiting_for_peer' && !connectionTimestamp) {
       setConnectionTimestamp(Date.now());
@@ -131,18 +121,13 @@ function HostPageInner() {
 
 
 
-  // Handle initial mount from LandingPage
   useEffect(() => {
     const fromLanding = location.state?.fromLanding;
-    console.log('[HostPage] Navigation check - fromLanding:', fromLanding, 'stream:', !!stream);
 
     if (fromLanding) {
       if (stream) {
-        console.log('[HostPage] Stream available from context');
         setIsWaitingForStream(false);
       } else {
-        // Give some time for the stream to be set in context
-        console.log('[HostPage] Waiting for stream from LandingPage...');
         setIsWaitingForStream(true);
         const timeoutId = setTimeout(() => {
           if (!stream && !hasNavigatedRef.current) {
@@ -153,22 +138,17 @@ function HostPageInner() {
         }, TIMING.STREAM_WAIT_TIMEOUT);
 
         return () => {
-          console.log('[HostPage] Cleaning up stream wait timeout');
           clearTimeout(timeoutId);
         };
       }
     } else if (!stream && !hasNavigatedRef.current) {
-      // Direct access without stream - redirect immediately
-      console.log('[HostPage] Direct access without stream - redirecting');
       hasNavigatedRef.current = true;
       navigate('/');
     }
   }, [location.state, stream, navigate]);
 
-  // Clear waiting state when stream is available
   useEffect(() => {
     if (stream && isWaitingForStream) {
-      console.log('HostPage: Stream received, clearing waiting state');
       setIsWaitingForStream(false);
     }
   }, [stream, isWaitingForStream]);
@@ -180,25 +160,20 @@ function HostPageInner() {
   };
 
   const handleToggleVideo = () => {
-    console.log('handleToggleVideo - isPaused:', isPaused);
     toggleVideo(isPaused);
   };
 
   const handleToggleAudio = () => {
-    console.log('handleToggleAudio - isMuted:', isMuted);
     toggleAudio(isMuted);
   };
 
   const handleSwitchCamera = () => {
-    console.log('handleSwitchCamera called');
     switchCamera();
   };
 
 
-  // Cleanup only on unmount
   useEffect(() => {
     return () => {
-      console.log('[HostPage] Unmounting - cleaning up stream and connection');
       if (stopCaptureRef.current) {
         stopCaptureRef.current();
       }
@@ -214,7 +189,6 @@ function HostPageInner() {
     }
   }, [error, navigate]);
 
-  // Show loading state while waiting for stream from LandingPage
   if (isWaitingForStream) {
     return (
       <div className="host-page">
@@ -225,7 +199,6 @@ function HostPageInner() {
     );
   }
 
-  // If no stream and not waiting, redirect is handled by useEffect
   if (!stream) {
     return null;
   }

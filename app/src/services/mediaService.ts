@@ -50,7 +50,6 @@ class MediaService {
     const cameras = await this.getAvailableCameras();
     if (cameras.length < 2) return false;
 
-    // Check for facing mode capability or label hints
     const hasBack = cameras.some(cam =>
       cam.label.toLowerCase().includes('back') ||
       cam.label.toLowerCase().includes('rear') ||
@@ -62,7 +61,6 @@ class MediaService {
       cam.label.toLowerCase().includes('facetime')
     );
 
-    // If labels don't reveal facing modes, assume multiple cameras = switchable
     return (hasBack && hasFront) || cameras.length >= 2;
   }
 
@@ -127,27 +125,16 @@ class MediaService {
       ? await this.getCameraStream()
       : await this.getScreenStream();
 
-    // Add microphone track if available (except for camera which already has audio)
     if (sourceType === 'screen') {
       const micTrack = await this.getMicrophoneTrack();
       if (micTrack) {
         stream.addTrack(micTrack);
         this.microphoneTrack = micTrack;
-        console.log('Screen sharing with microphone:', {
-          videoTracks: stream.getVideoTracks().length,
-          audioTracks: stream.getAudioTracks().length,
-          microphoneAdded: true
-        });
       }
     } else {
-      // For camera, the audio track is the microphone
       const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
         this.microphoneTrack = audioTrack;
-        console.log('Camera with microphone:', {
-          videoTracks: stream.getVideoTracks().length,
-          audioTracks: stream.getAudioTracks().length
-        });
       }
     }
 
@@ -169,28 +156,22 @@ class MediaService {
   }
 
   toggleVideo(stream: MediaStream, enabled: boolean): void {
-    // Toggle video tracks
     stream.getVideoTracks().forEach(track => {
       track.enabled = enabled;
     });
 
-    // If screen sharing, also toggle system audio (but not microphone)
     if (this.sourceType === 'screen') {
       stream.getAudioTracks().forEach(track => {
-        // Only toggle system audio, not microphone
         if (track !== this.microphoneTrack) {
           track.enabled = enabled;
-          console.log(`System audio ${enabled ? 'enabled' : 'disabled'}`);
         }
       });
     }
   }
 
   toggleAudio(_stream: MediaStream, enabled: boolean): void {
-    // Only toggle microphone track
     if (this.microphoneTrack) {
       this.microphoneTrack.enabled = enabled;
-      console.log(`Microphone ${enabled ? 'enabled' : 'disabled'}`);
     }
   }
 
@@ -199,31 +180,23 @@ class MediaService {
       throw new Error(ERROR_MESSAGES.CAMERA_SWITCHING_ONLY_AVAILABLE);
     }
 
-    // Toggle facing mode
     const newFacingMode: CameraFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
 
     try {
-      // Stop current video track
       const currentVideoTrack = currentStream.getVideoTracks()[0];
       if (currentVideoTrack) {
         currentVideoTrack.stop();
         currentStream.removeTrack(currentVideoTrack);
       }
 
-      // Get new camera stream with opposite facing mode
       const newStream = await this.getCameraStream(newFacingMode);
       const newVideoTrack = newStream.getVideoTracks()[0];
 
       if (newVideoTrack) {
-        // Add new video track to current stream
         currentStream.addTrack(newVideoTrack);
       }
 
-      // Keep the audio track from the original stream
-      // The new stream's audio track can be stopped
       newStream.getAudioTracks().forEach(track => track.stop());
-
-      console.log(`Camera switched to ${newFacingMode} mode`);
       return currentStream;
     } catch (error) {
       throw this.handleMediaError(error);

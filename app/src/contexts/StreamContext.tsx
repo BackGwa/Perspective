@@ -28,11 +28,9 @@ interface StreamContextType {
   sessionDomainPolicy: DomainPolicy;
   setSessionDomainPolicy: (policy: DomainPolicy) => void;
 
-  // Participant peer instance (reused across navigation)
   participantPeer: Peer | null;
   setParticipantPeer: (peer: Peer | null) => void;
 
-  // Participant data connection to host (reused across navigation)
   participantHostConnection: DataConnection | null;
   setParticipantHostConnection: (connection: DataConnection | null) => void;
 }
@@ -58,16 +56,13 @@ export function StreamProvider({ children }: { children: ReactNode }) {
   const [participantHostConnection, setParticipantHostConnection] = useState<DataConnection | null>(null);
 
   const setStream = (stream: MediaStream | null, sourceType: MediaSourceType | null) => {
-    console.log('[StreamContext] setStream called - stream:', stream, 'sourceType:', sourceType);
     setStreamState(prev => {
-      const newState = {
+      return {
         ...prev,
         stream,
         sourceType,
         error: null
       };
-      console.log('[StreamContext] New state:', newState);
-      return newState;
     });
   };
 

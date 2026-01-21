@@ -26,7 +26,6 @@ function ParticipantPageInner() {
   const { peerId, connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer, setParticipantHostConnection, sessionSecret } = useStreamContext();
   const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
 
-  // Check if accessed directly via link (no existing peer from password verification)
   useEffect(() => {
     if (!hostPeerId) {
       navigateWithError(navigate, ERROR_MESSAGES.INVALID_PEER_ID);
@@ -35,8 +34,6 @@ function ParticipantPageInner() {
 
     if (!participantPeer) {
       if (isLeavingRef.current) return;
-      console.log('[ParticipantPage] No existing peer, redirecting to landing page for password verification');
-      // Redirect to landing page with session ID for password verification
       navigate('/', {
         replace: true,
         state: {
@@ -47,7 +44,6 @@ function ParticipantPageInner() {
     }
   }, [hostPeerId, participantPeer, navigate]);
 
-  // Initialize chat messaging
   const { sendMessage, handleIncomingMessage } = useChatMessaging({
     role: 'participant',
     peerId,
@@ -56,27 +52,22 @@ function ParticipantPageInner() {
     connectionTimestamp: connectionTimestamp || 0
   });
 
-  // Only initialize peer connection after we have a participantPeer
   const { getShareLink } = usePeerConnection({
     role: 'participant',
-    hostPeerId: participantPeer ? hostPeerId : null, // Only connect if we have a peer
+    hostPeerId: participantPeer ? hostPeerId : null,
     existingPeer: participantPeer,
     onChatMessage: handleIncomingMessage
   });
 
-  // Set connection timestamp when participant connects
   useEffect(() => {
     if (connectionStatus === 'connected' && !connectionTimestamp) {
       setConnectionTimestamp(Date.now());
     }
   }, [connectionStatus, connectionTimestamp, setConnectionTimestamp]);
 
-  // Handle connection status changes - only if we have a participantPeer
   useEffect(() => {
-    // Skip status checks if no participantPeer (still waiting for password verification)
     if (!participantPeer) return;
 
-    // Skip if still in initial/connecting states
     if (connectionStatus === 'idle' || connectionStatus === 'initializing' || connectionStatus === 'connecting') {
       return;
     }
@@ -147,11 +138,9 @@ function ParticipantPageInner() {
     navigate('/', { replace: true });
   };
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (participantPeer) {
-        console.log('[ParticipantPage] Cleaning up participant peer on unmount');
         setParticipantPeer(cleanupParticipantPeer(participantPeer));
       }
       setParticipantHostConnection(null);

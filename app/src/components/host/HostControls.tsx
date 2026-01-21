@@ -70,12 +70,10 @@ export function HostControls({
   const [inputValue, setInputValue] = useState('');
   const { messages, connectionTimestamp } = useChatContext();
 
-  // Filter messages by connection timestamp
   const visibleMessages = messages.filter(
     msg => connectionTimestamp && msg.timestamp >= connectionTimestamp
   );
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (isChatVisible) {
       const container = messagesContainerRef.current;
@@ -185,7 +183,6 @@ export function HostControls({
               <UnreadBadge count={unreadCount} />
             </div>
 
-            {/* Camera switch button - only shown in camera mode, leftmost position */}
             {isCameraMode && (
               <button
                 className={`control-button ${!canSwitchCamera ? 'control-button--disabled' : ''}`}

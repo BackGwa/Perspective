@@ -21,8 +21,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const addMessage = useCallback((message: ChatMessage) => {
     setMessages(prev => [...prev, message]);
-    // Only increment unread count if chat is not open
-    // Use ref to always get the latest value
     if (!isChatOpenRef.current) {
       setUnreadCount(prev => prev + 1);
     }
@@ -34,7 +32,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const setChatOpen = useCallback((isOpen: boolean) => {
     isChatOpenRef.current = isOpen;
-    // Mark all as read when opening chat
     if (isOpen) {
       setUnreadCount(0);
     }

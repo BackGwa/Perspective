@@ -53,12 +53,10 @@ export function ParticipantControls({
     const [inputValue, setInputValue] = useState('');
     const { messages, connectionTimestamp } = useChatContext();
 
-    // Filter messages by connection timestamp
     const visibleMessages = messages.filter(
         msg => connectionTimestamp && msg.timestamp >= connectionTimestamp
     );
 
-    // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
         if (isChatVisible) {
             const container = messagesContainerRef.current;

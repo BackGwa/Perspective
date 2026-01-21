@@ -44,7 +44,6 @@ class PeerService {
     });
 
     this.peer.on('open', (id: string) => {
-      console.log('Peer connection opened with ID:', id);
       callbacks.onOpen?.(id);
     });
 
@@ -55,33 +54,25 @@ class PeerService {
     });
 
     this.peer.on('disconnected', () => {
-      console.log('Peer disconnected');
       callbacks.onDisconnect?.();
     });
 
     this.peer.on('close', () => {
-      console.log('Peer connection closed');
       callbacks.onClose?.();
     });
 
     this.peer.on('call', (call: MediaConnection) => {
-      console.log('Incoming call from:', call.peer);
       callbacks.onCall?.(call);
     });
 
     if (role === 'host') {
       this.peer.on('connection', (conn) => {
-        console.log('Incoming connection from:', conn.peer);
-
-        // Wait for the connection to be fully open before storing and calling callback
         conn.on('open', () => {
-          console.log('Data connection opened with:', conn.peer);
           this.dataConnections.set(conn.peer, conn);
           callbacks.onConnection?.(conn.peer, conn);
         });
 
         conn.on('close', () => {
-          console.log('Data connection closed with:', conn.peer);
           this.dataConnections.delete(conn.peer);
         });
       });
@@ -103,7 +94,6 @@ class PeerService {
     }
 
     call.on('close', () => {
-      console.log('Call closed with:', peerId);
       this.activeCalls.delete(peerId);
     });
 
@@ -113,12 +103,7 @@ class PeerService {
   answerCall(call: MediaConnection, stream?: MediaStream): void {
     call.answer(stream);
 
-    call.on('stream', () => {
-      console.log('Received remote stream from:', call.peer);
-    });
-
     call.on('close', () => {
-      console.log('Call closed with:', call.peer);
       this.activeCalls.delete(call.peer);
     });
 
@@ -134,7 +119,6 @@ class PeerService {
       const dataConnection = this.peer!.connect(hostPeerId);
 
       dataConnection.on('open', () => {
-        console.log('Data connection established with host');
         this.dataConnections.set(hostPeerId, dataConnection);
         resolve(dataConnection);
       });
@@ -145,7 +129,6 @@ class PeerService {
       });
 
       dataConnection.on('close', () => {
-        console.log('Data connection closed with host');
         this.dataConnections.delete(hostPeerId);
       });
     });
@@ -193,11 +176,9 @@ class PeerService {
   }
 
   setDataConnection(peerId: string, connection: DataConnection): void {
-    console.log('[PeerService] Manually registering data connection for:', peerId);
     this.dataConnections.set(peerId, connection);
 
     connection.on('close', () => {
-      console.log('[PeerService] Manual data connection closed with:', peerId);
       this.dataConnections.delete(peerId);
     });
   }

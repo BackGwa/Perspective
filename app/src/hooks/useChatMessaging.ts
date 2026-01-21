@@ -29,19 +29,15 @@ export function useChatMessaging({
 
     const trimmed = text.trim();
 
-    // Validate message length
     if (trimmed.length > MAX_MESSAGE_LENGTH) {
       console.warn('[Chat] Message exceeds maximum length:', MAX_MESSAGE_LENGTH);
       return;
     }
 
-    console.log('[Chat] Sending message:', { role, peerId, text: trimmed });
-
     const isEncrypted = !!sessionSecret;
     let messageText = trimmed;
     let iv: string | undefined;
 
-    // Encrypt if password exists
     if (isEncrypted && sessionSecret) {
       try {
         const encrypted = await encryptMessage(trimmed, sessionSecret);
@@ -66,20 +62,14 @@ export function useChatMessaging({
       }
     };
 
-    // Send message based on role
     if (role === 'host') {
-      // Host: broadcast to all participants
-      console.log('[Chat] Host broadcasting message to all participants');
       peerService.broadcastDataMessage(message);
     } else if (role === 'participant' && hostPeerId) {
-      // Participant: send to host
-      console.log('[Chat] Participant sending message to host:', hostPeerId);
       peerService.sendDataMessage(hostPeerId, message);
     } else {
       console.error('[Chat] Cannot send message - invalid role or missing hostPeerId', { role, hostPeerId });
     }
 
-    // Add to local messages (use original plaintext)
     addMessage({
       id: message.payload.id,
       role: role === 'host' ? 'host' : 'peer',
@@ -91,35 +81,26 @@ export function useChatMessaging({
   }, [peerId, role, hostPeerId, sessionSecret, addMessage]);
 
   const handleIncomingMessage = useCallback(async (data: unknown) => {
-    console.log('[Chat] Received data:', { role, data });
-
     if (!isChatDataMessage(data)) {
-      console.log('[Chat] Not a chat message, ignoring');
       return;
     }
-
-    console.log('[Chat] Valid chat message received:', data.payload);
 
     const { payload } = data;
     let displayText = payload.text;
 
-    // Decrypt if needed
     if (payload.encrypted && sessionSecret && payload.iv) {
       try {
         displayText = await decryptMessage(payload.text, payload.iv, sessionSecret);
       } catch (error) {
         console.error('Failed to decrypt message:', error);
-        // Ignore message if decryption fails
         return;
       }
     }
 
-    // Filter by connection timestamp
     if (payload.timestamp < connectionTimestamp) {
-      return; // Ignore messages from before we joined
+      return;
     }
 
-    // Host: relay to other participants (except sender)
     if (role === 'host') {
       const participantIds = peerService.getAllParticipantIds();
       participantIds.forEach((participantId) => {
@@ -129,7 +110,6 @@ export function useChatMessaging({
       });
     }
 
-    // Add to local messages
     addMessage({
       id: payload.id,
       role: payload.senderRole === 'host' ? 'host' : 'peer',
