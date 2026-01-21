@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type RefObject } from 'react';
+import { useRef, useState, useEffect, useMemo, useCallback, type RefObject } from 'react';
 import {
   IconMicOn,
   IconMicOff,
@@ -70,9 +70,10 @@ export function HostControls({
   const [inputValue, setInputValue] = useState('');
   const { messages, connectionTimestamp } = useChatContext();
 
-  const visibleMessages = messages.filter(
-    msg => connectionTimestamp && msg.timestamp >= connectionTimestamp
-  );
+  const visibleMessages = useMemo(() => {
+    if (!connectionTimestamp) return [];
+    return messages.filter(msg => msg.timestamp >= connectionTimestamp);
+  }, [messages, connectionTimestamp]);
 
   useEffect(() => {
     if (isChatVisible) {
@@ -82,19 +83,18 @@ export function HostControls({
     }
   }, [messages, isChatVisible]);
 
-  const handleSendClick = () => {
-    if (inputValue.trim()) {
-      onSendMessage(inputValue);
-      setInputValue('');
-    }
-  };
+  const handleSendClick = useCallback(() => {
+    const trimmedValue = inputValue.trim();
+    if (!trimmedValue) return;
+    onSendMessage(trimmedValue);
+    setInputValue('');
+  }, [inputValue, onSendMessage]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendClick();
-    }
-  };
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    e.preventDefault();
+    handleSendClick();
+  }, [handleSendClick]);
 
   useClickOutside(containerRef, () => {
     if (isChatVisible) return;
