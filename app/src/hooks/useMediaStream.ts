@@ -16,13 +16,9 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
 
   const startCapture = useCallback(async (sourceType: MediaSourceType) => {
     try {
-      console.log('[useMediaStream] startCapture called for:', sourceType);
       setError(null);
       const stream = await mediaService.getStream(sourceType);
-      console.log('[useMediaStream] Got stream from mediaService:', stream);
-      console.log('[useMediaStream] Stream tracks:', stream?.getTracks());
       setStream(stream, sourceType);
-      console.log('[useMediaStream] Called setStream in context');
       setPaused(false);
       setMuted(false);
       return stream;
@@ -46,26 +42,20 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
 
   const toggleVideo = useCallback((enabled: boolean) => {
     if (streamState.stream) {
-      console.log('toggleVideo called with enabled:', enabled);
       mediaService.toggleVideo(streamState.stream, enabled);
       setPaused(!enabled);
-      console.log('Video tracks after toggle:', streamState.stream.getVideoTracks().map(t => ({ id: t.id, enabled: t.enabled })));
     }
   }, [streamState.stream, setPaused]);
 
   const toggleAudio = useCallback((enabled: boolean) => {
     if (streamState.stream) {
-      console.log('toggleAudio called with enabled:', enabled);
       mediaService.toggleAudio(streamState.stream, enabled);
       setMuted(!enabled);
-      console.log('Audio tracks after toggle:', streamState.stream.getAudioTracks().map(t => ({ id: t.id, enabled: t.enabled })));
     }
   }, [streamState.stream, setMuted]);
 
-  // Camera switching state
   const [canSwitchCamera, setCanSwitchCamera] = useState(false);
 
-  // Check if camera switching is available when source type changes
   useEffect(() => {
     const checkCameraSwitch = async () => {
       if (streamState.sourceType === 'camera') {
@@ -86,7 +76,6 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
 
     try {
       await mediaService.switchCamera(streamState.stream);
-      console.log('Camera switched successfully');
     } catch (error) {
       console.error('Failed to switch camera:', error);
       const err = error instanceof Error ? error : new Error('Failed to switch camera');
@@ -96,7 +85,6 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
 
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Keep ref in sync
   useEffect(() => {
     streamRef.current = streamState.stream;
   }, [streamState.stream]);
@@ -153,7 +141,7 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
         mediaService.stopStream(streamRef.current);
       }
     };
-  }, [cleanupOnUnmount]); // Removed streamState.stream dependency to avoid re-triggering, relying on ref/closure or just simple unmount check if possible. But standard pattern is ok.
+  }, [cleanupOnUnmount]);
 
 
   return {

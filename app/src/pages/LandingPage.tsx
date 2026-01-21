@@ -40,6 +40,7 @@ export function LandingPage() {
     const {
         setSessionSecret,
         setParticipantPeer,
+        setParticipantHostConnection,
         setRemoteStream,
         setConnectionStatus,
         sessionDomainPolicy,
@@ -62,6 +63,7 @@ export function LandingPage() {
     const [participantPassword, setParticipantPassword] = useState('');
     const [isAwaitingPasswordVerification, setIsAwaitingPasswordVerification] = useState(false);
     const [dataConnectionForVerification, setDataConnectionForVerification] = useState<DataConnection | null>(null);
+    const dataConnectionForVerificationRef = useRef<DataConnection | null>(null);
     const hostPeerIdForVerificationRef = useRef<string | null>(null);
     const tempPeerForVerificationRef = useRef<Peer | null>(null);
 
@@ -199,17 +201,22 @@ export function LandingPage() {
             setIsAwaitingPasswordVerification(true);
         },
         onApproved: () => {
-            console.log('[LandingPage] Password approved, navigating to participant page');
             setIsConnecting(false);
             setIsAwaitingPasswordVerification(false);
 
-            // Save peer to context for reuse in ParticipantPage
+            // Save peer and data connection to context for reuse in ParticipantPage
             const currentTempPeer = tempPeerForVerificationRef.current;
             if (currentTempPeer) {
-                console.log('[LandingPage] Saving peer to context for reuse');
                 setParticipantPeer(currentTempPeer);
                 // Don't destroy the peer - it will be reused
                 tempPeerForVerificationRef.current = null;
+            }
+
+            // Save data connection to context for reuse
+            const currentDataConnection = dataConnectionForVerificationRef.current;
+            if (currentDataConnection) {
+                setParticipantHostConnection(currentDataConnection);
+                dataConnectionForVerificationRef.current = null;
             }
 
             const currentHostPeerId = hostPeerIdForVerificationRef.current;
@@ -219,12 +226,10 @@ export function LandingPage() {
                 });
             }
         },
-        onRejected: (reason) => {
-            console.log('[LandingPage] Password rejected:', reason);
+        onRejected: () => {
             setIsConnecting(false);
         },
         onMaxRetriesExceeded: () => {
-            console.log('[LandingPage] Max retries exceeded');
             setIsConnecting(false);
             setError(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
             const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
@@ -232,6 +237,7 @@ export function LandingPage() {
             setIsAwaitingPasswordVerification(false);
             hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
+            dataConnectionForVerificationRef.current = null;
             setMenuState('root');
             setSessionId('');
         }
@@ -248,7 +254,6 @@ export function LandingPage() {
         // Handle auto-join from direct link access (only once)
         if (location.state?.autoJoin && location.state?.sessionId && !hasHandledAutoJoin.current) {
             hasHandledAutoJoin.current = true;
-            console.log('[LandingPage] Auto-join triggered with session ID:', location.state.sessionId);
             setMenuState('join');
             setSessionId(location.state.sessionId);
             setTimeout(() => {
@@ -285,17 +290,13 @@ export function LandingPage() {
     const handleCapture = async (source: MediaSourceType) => {
         try {
             setError(null);
-            console.log(`[LandingPage] Starting capture for: ${source}`);
 
             // Save session secret to context (empty string = public room)
             const trimmedPassword = hostPassword.trim();
             const sessionSecret = trimmedPassword ? trimmedPassword : null;
             setSessionSecret(sessionSecret);
-            console.log('[LandingPage] Session secret set:', sessionSecret ? 'Protected' : 'Public');
 
-            const stream = await startCapture(source);
-            console.log('[LandingPage] Capture successful, stream:', stream);
-            console.log('[LandingPage] Stream tracks:', stream?.getTracks());
+            await startCapture(source);
 
             // Navigate immediately - stream is already in context
             navigate('/host', { state: { fromLanding: true, hasStream: true } });
@@ -352,6 +353,7 @@ export function LandingPage() {
             setIsAwaitingPasswordVerification(false);
             hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
+            dataConnectionForVerificationRef.current = null;
             setParticipantPassword('');
             setError(null);
             setMenuState('root');
@@ -426,8 +428,6 @@ export function LandingPage() {
     }, [joinMode]);
 
     const handleQRCodeScanned = useCallback(async (result: QRScanResult) => {
-        console.log('[LandingPage] Valid QR code scanned:', result);
-
         if (!result.peerId) {
             console.error('[LandingPage] QR scan missing peer ID');
             return;
@@ -497,13 +497,11 @@ export function LandingPage() {
             tempPeerForVerificationRef.current = tempPeer;
 
             tempPeer.on('open', () => {
-                console.log('[LandingPage] Temporary peer opened for verification');
-
                 const dataConn = tempPeer.connect(peerIdToJoin);
 
                 dataConn.on('open', () => {
-                    console.log('[LandingPage] Data connection established for verification');
                     setDataConnectionForVerification(dataConn);
+                    dataConnectionForVerificationRef.current = dataConn;
 
                     const joinRequestMessage: SessionJoinRequestMessage = {
                         type: 'SESSION_JOIN_REQUEST',
@@ -523,12 +521,12 @@ export function LandingPage() {
                     let isPasswordRoom = false;
                     dataConn.on('data', (data: unknown) => {
                         if (isSessionJoinRejectedMessage(data)) {
-                            console.log('[LandingPage] Join rejected:', data.payload.reason);
                             setError(data.payload.reason);
                             setIsConnecting(false);
                             setIsAwaitingPasswordVerification(false);
                             hostPeerIdForVerificationRef.current = null;
                             setDataConnectionForVerification(null);
+                            dataConnectionForVerificationRef.current = null;
                             const cleanedPeer = cleanupParticipantPeer(tempPeer);
                             tempPeerForVerificationRef.current = cleanedPeer;
                             dataConn.close();
@@ -588,8 +586,7 @@ export function LandingPage() {
                 return;
             }
             peerId = validation.peerId!;
-            console.log('[LandingPage] Extracted peer ID from input URL:', peerId);
-            setSessionId(peerId); // Normalise the input field
+            setSessionId(peerId);
         }
 
         await startJoinFlow(peerId);

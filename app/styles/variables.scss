@@ -82,6 +82,7 @@ $breakpoint-desktop: 1024px;
   --font-size-xxs: 0.65rem;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
+  --font-size-small: var(--font-size-sm);
   --font-size-base: 1rem;
   --font-size-md: 1.1rem;
   --font-size-lg: 1.25rem;
@@ -140,12 +141,22 @@ $breakpoint-desktop: 1024px;
   // Component-specific sizes
   --size-qr-panel-min: 280px;
   --size-button-mobile: 56px;
+  --size-controls-chat-panel-height: 50vh;
+  --size-controls-chat-panel-height-dynamic: 50dvh;
+  --size-controls-chat-message-max-width: 70%;
 
   // Additional font sizes
   --font-size-copy-button: 0.9rem;
 
   // Additional animation durations
-  --duration-slide: 0.3s;
+  --duration-slide: 0.25s;
+
+  // Chat overlay
+  --line-height-controls-chat-message: 1.2;
+  --shadow-text-controls: 0 0 12px rgb(var(--rgb-black));
+  --shadow-text-controls-muted: 0 0 12px rgb(var(--rgb-black));
+  --offset-controls-overlay-reveal: calc(var(--spacing-xs) + var(--spacing-sm));
+  --gradient-controls-overlay-chat: linear-gradient(to top, rgba(var(--rgb-black), 0.85) 0%, rgba(var(--rgb-black), 0.6) 60%, rgba(var(--rgb-black), 0.2) 85%, rgba(var(--rgb-black), 0) 100%);
 
   // Brand title sizes (for landing page)
   --size-brand-title-desktop: 17.5rem;

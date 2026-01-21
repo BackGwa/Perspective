@@ -33,6 +33,7 @@ export const HOST_CONTROLS = {
   PAUSE_VIDEO: 'Pause Video',
   UNMUTE: 'Unmute',
   MUTE: 'Mute',
+  CHAT: 'Chat',
   SHARE_LINK: 'Share Link',
   STOP_SHARING: 'Stop Sharing',
 } as const;
@@ -40,8 +41,15 @@ export const HOST_CONTROLS = {
 export const PARTICIPANT_CONTROLS = {
   UNMUTE: 'Unmute',
   MUTE: 'Mute',
+  CHAT: 'Chat',
   SHARE_LINK: 'Share Link',
   LEAVE_SESSION: 'Leave Session',
+} as const;
+
+export const CHAT_OVERLAY = {
+  BACK: 'Back',
+  PLACEHOLDER: 'Type a message',
+  SEND: 'Send',
 } as const;
 
 export const QR_SHARE = {
