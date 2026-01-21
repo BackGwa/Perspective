@@ -152,7 +152,9 @@
 
   .participant-page--controls-visible {
     .remote-stream {
-      margin: var(--spacing-md);
+      margin-left: var(--spacing-md);
+      margin-right: var(--spacing-md);
+      margin-top: calc((var(--spacing-controls-overlay-height) / 2));
       margin-bottom: calc(var(--spacing-controls-overlay-height) + var(--spacing-md));
       transition: margin var(--duration-slide);
     }
