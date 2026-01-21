@@ -84,7 +84,12 @@ sequenceDiagram
 
     PS-->>HostPage: data(CHAT_MESSAGE)
     HostPage->>ChatHook: handleIncomingMessage
-    ChatHook->>Crypto: decryptMessage(ciphertext, iv, sessionSecret?)
+    alt Encrypted payload + sessionSecret
+        ChatHook->>Crypto: decryptMessage(ciphertext, iv, sessionSecret)
+    else Plaintext
+        ChatHook->>ChatHook: use payload text as-is
+    end
+    ChatHook->>ChatHook: ignore if payload.timestamp < connectionTimestamp
     ChatHook->>PS: forward to other participants (host only)
     ChatHook->>ChatCtx: addMessage + update unreadCount (if chat closed)
 ```
@@ -109,11 +114,13 @@ sequenceDiagram
         PwdH->>PwdH: check max participants + isPasswordProtected
         alt Max participants
             PwdH-->>Part: MAX_PARTICIPANTS_EXCEEDED
+            PwdH-->>Part: close data connection
         else Public room
             PwdH-->>Part: PASSWORD_APPROVED
         else Password protected
             PwdH-->>Part: PASSWORD_REQUEST(nonce, algorithm)
             Part->>PwdV: submitPassword()
+            PwdV->>PwdV: validate length (4-32)
             PwdV->>PwdV: hmacSha256(password, nonce)
             PwdV-->>PwdH: PASSWORD_RESPONSE(proof)
             PwdH->>PwdH: verifyProof(proof, nonce)
