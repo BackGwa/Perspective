@@ -27,14 +27,12 @@ export function usePasswordVerification({
   const handlePasswordMessage = useCallback((message: PasswordMessage) => {
     switch (message.type) {
       case 'PASSWORD_REQUEST':
-        console.log('[PasswordVerification] Password required');
         nonceRef.current = message.payload?.nonce ?? null;
         setIsVerifying(false);
         onPasswordRequired?.();
         break;
 
       case 'PASSWORD_APPROVED':
-        console.log('[PasswordVerification] Password approved');
         nonceRef.current = null;
         setIsVerifying(false);
         setErrorMessage(null);
@@ -42,19 +40,16 @@ export function usePasswordVerification({
         break;
 
       case 'PASSWORD_REJECTED': {
-        console.log('[PasswordVerification] Password rejected:', message.payload);
         const remainingRetries = message.payload?.remainingRetries ?? 0;
         const reason = message.payload?.reason || ERROR_MESSAGES.PASSWORD_INCORRECT;
 
         setIsVerifying(false);
 
         if (remainingRetries === 0) {
-          // Max retries exceeded
           nonceRef.current = null;
           setErrorMessage(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
           onMaxRetriesExceeded?.();
         } else {
-          // Still has retries
           const [singular, plural] = PASSWORD_VERIFICATION.ATTEMPTS_REMAINING.split('|');
           setErrorMessage(`${reason} (${remainingRetries} ${remainingRetries === 1 ? singular : plural} remaining)`);
           onRejected?.(reason);
@@ -63,7 +58,6 @@ export function usePasswordVerification({
       }
 
       case 'MAX_PARTICIPANTS_EXCEEDED':
-        console.log('[PasswordVerification] Max participants exceeded');
         nonceRef.current = null;
         setIsVerifying(false);
         setErrorMessage(message.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
@@ -124,7 +118,6 @@ export function usePasswordVerification({
       payload
     };
 
-    // Send directly through the data connection (not through peerService)
     dataConnection.send(responseMessage);
   }, [dataConnection]);
 

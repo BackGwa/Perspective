@@ -1,0 +1,22 @@
+@import '../variables.scss';
+
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-danger);
+  border-radius: var(--border-radius-circle);
+  z-index: calc(var(--z-overlay) + 1);
+  pointer-events: none;
+}
+
+@media (max-width: $breakpoint-desktop) {
+  .unread-badge {
+    width: 10px;
+    height: 10px;
+    top: -3px;
+    right: -3px;
+  }
+}

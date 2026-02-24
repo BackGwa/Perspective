@@ -49,12 +49,49 @@ sequenceDiagram
         end
     end
 
-    PartLP->>SC: setParticipantPeer(tempPeer)
+    PartLP->>SC: setParticipantPeer(tempPeer), setParticipantHostConnection(dataConn)
     PartLP->>PartPage: navigate(/share?peer=...)
     PS->>PS: callPeer(stream) + applyVideoDegradationPreference
     PS-->>PPeer: MediaStream
     PPeer-->>PartPage: call(stream)
     PartPage->>SC: setRemoteStream(stream)
+```
+
+### Chat Messaging (Data Channel)
+```mermaid
+sequenceDiagram
+    participant HostPage as HostPage
+    participant PartPage as ParticipantPage
+    participant ChatCtx as ChatContext
+    participant ChatHook as useChatMessaging
+    participant Crypto as passwordCrypto
+    participant PS as PeerService
+
+    HostPage->>ChatCtx: setConnectionTimestamp(now)
+    PartPage->>ChatCtx: setConnectionTimestamp(now)
+
+    alt Participant sends message
+        PartPage->>ChatHook: sendMessage(text)
+        ChatHook->>ChatHook: validate length <= 128
+        ChatHook->>Crypto: encryptMessage(text, sessionSecret?)
+        ChatHook->>PS: sendDataMessage(hostPeerId, CHAT_MESSAGE)
+    else Host sends message
+        HostPage->>ChatHook: sendMessage(text)
+        ChatHook->>ChatHook: validate length <= 128
+        ChatHook->>Crypto: encryptMessage(text, sessionSecret?)
+        ChatHook->>PS: broadcastDataMessage(CHAT_MESSAGE)
+    end
+
+    PS-->>HostPage: data(CHAT_MESSAGE)
+    HostPage->>ChatHook: handleIncomingMessage
+    alt Encrypted payload + sessionSecret
+        ChatHook->>Crypto: decryptMessage(ciphertext, iv, sessionSecret)
+    else Plaintext
+        ChatHook->>ChatHook: use payload text as-is
+    end
+    ChatHook->>ChatHook: ignore if payload.timestamp < connectionTimestamp
+    ChatHook->>PS: forward to other participants (host only)
+    ChatHook->>ChatCtx: addMessage + update unreadCount (if chat closed)
 ```
 
 ### Password Authentication Flow
@@ -77,11 +114,13 @@ sequenceDiagram
         PwdH->>PwdH: check max participants + isPasswordProtected
         alt Max participants
             PwdH-->>Part: MAX_PARTICIPANTS_EXCEEDED
+            PwdH-->>Part: close data connection
         else Public room
             PwdH-->>Part: PASSWORD_APPROVED
         else Password protected
             PwdH-->>Part: PASSWORD_REQUEST(nonce, algorithm)
             Part->>PwdV: submitPassword()
+            PwdV->>PwdV: validate length (4-32)
             PwdV->>PwdV: hmacSha256(password, nonce)
             PwdV-->>PwdH: PASSWORD_RESPONSE(proof)
             PwdH->>PwdH: verifyProof(proof, nonce)
@@ -166,6 +205,30 @@ flowchart TD
     H -->|Yes| J[Stop scanning + stop camera]
     J --> K[Set sessionId + switch to input mode]
     K --> L["startJoinFlow(peerId)"]
+```
+
+### 4. In-Session Chat
+```mermaid
+flowchart TD
+    A[User opens chat] --> B["setChatOpen(true) + unreadCount reset"]
+    B --> C[Compose message]
+    C --> D[useChatMessaging.sendMessage]
+    D --> E{Length <= 128?}
+    E -->|No| F[Drop + warn]
+    E -->|Yes| G{sessionSecret present?}
+    G -->|Yes| H[encryptMessage AES-GCM]
+    G -->|No| I[Send plaintext]
+    H --> J[PeerService send/broadcast CHAT_MESSAGE]
+    I --> J
+    J --> K[Receiver handleIncomingMessage]
+    K --> L{Encrypted?}
+    L -->|Yes| M[decryptMessage AES-GCM]
+    L -->|No| N[Use text as-is]
+    M --> O[ChatContext addMessage]
+    N --> O
+    O --> P{Chat open?}
+    P -->|No| Q[Increment unreadCount]
+    P -->|Yes| R[Keep unreadCount at 0]
 ```
 
 ## Media Control Flows

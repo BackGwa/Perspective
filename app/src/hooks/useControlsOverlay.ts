@@ -47,25 +47,31 @@ export function useControlsOverlay(overlayRef: RefObject<HTMLElement>) {
     };
   }, []);
 
-  const hideOverlay = useCallback(() => {
+  const clearHideTimeout = useCallback(() => {
     if (hideTimeoutRef.current) {
       window.clearTimeout(hideTimeoutRef.current);
       hideTimeoutRef.current = null;
     }
-    setIsOverlayVisible(false);
   }, []);
+
+  const startHideTimeout = useCallback(() => {
+    clearHideTimeout();
+    hideTimeoutRef.current = window.setTimeout(() => {
+      setIsOverlayVisible(false);
+    }, UI_TIMING.CONTROLS_OVERLAY_DISPLAY_DURATION);
+  }, [clearHideTimeout]);
+
+  const hideOverlay = useCallback(() => {
+    clearHideTimeout();
+    setIsOverlayVisible(false);
+  }, [clearHideTimeout]);
 
   const showOverlay = useCallback(() => {
     if (!isCompactLayout) return;
 
     setIsOverlayVisible(true);
-    if (hideTimeoutRef.current) {
-      window.clearTimeout(hideTimeoutRef.current);
-    }
-    hideTimeoutRef.current = window.setTimeout(() => {
-      setIsOverlayVisible(false);
-    }, UI_TIMING.CONTROLS_OVERLAY_DISPLAY_DURATION);
-  }, [isCompactLayout]);
+    startHideTimeout();
+  }, [isCompactLayout, startHideTimeout]);
 
   const handlePointerDown = useCallback((event: { target: EventTarget | null }) => {
     if (!isCompactLayout) return;
@@ -75,7 +81,9 @@ export function useControlsOverlay(overlayRef: RefObject<HTMLElement>) {
     const clickedInsideOverlay = !!(overlayElement && targetNode && overlayElement.contains(targetNode));
 
     if (isOverlayVisible) {
-      if (!clickedInsideOverlay) {
+      if (clickedInsideOverlay) {
+        startHideTimeout();
+      } else {
         hideOverlay();
       }
       return;

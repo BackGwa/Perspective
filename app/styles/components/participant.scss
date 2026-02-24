@@ -3,7 +3,7 @@
 .participant-page {
   opacity: 0;
   transform: scale(0.98);
-  animation: fadeInScale 0.3s ease-out forwards;
+  animation: fadeInScale 0.25s ease-out forwards;
 }
 
 @keyframes fadeInScale {
@@ -152,12 +152,20 @@
 
   .participant-page--controls-visible {
     .remote-stream {
-      margin: var(--spacing-md);
+      margin-left: var(--spacing-md);
+      margin-right: var(--spacing-md);
+      margin-top: calc((var(--spacing-controls-overlay-height) / 2));
+      margin-bottom: calc(var(--spacing-controls-overlay-height) + var(--spacing-md));
+      transition: margin var(--duration-slide);
     }
 
     .remote-stream__frame {
       border-radius: var(--border-radius-lg);
     }
+  }
+
+  .remote-stream {
+    transition: margin var(--duration-slide);
   }
 
   .remote-stream {

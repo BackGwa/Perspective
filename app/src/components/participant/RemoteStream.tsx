@@ -16,10 +16,6 @@ export function RemoteStream({ stream, isConnecting, isMuted = true }: RemoteStr
 
   useEffect(() => {
     if (videoRef.current) {
-      if (stream) {
-        console.log('RemoteStream: Setting stream to video element', stream);
-        console.log('Stream tracks:', stream.getTracks());
-      }
       videoRef.current.srcObject = stream ?? null;
     }
   }, [stream]);

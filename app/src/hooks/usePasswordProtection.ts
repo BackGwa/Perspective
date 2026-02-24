@@ -68,10 +68,7 @@ export function usePasswordProtection({
     const startPasswordFlow = () => {
       if (isResolved) return;
 
-      // Check if max participants limit is exceeded
       if (currentParticipantCount >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
-        console.log('[PasswordProtection] Max participants exceeded. Current:', currentParticipantCount, 'Max:', PARTICIPANT_CONFIG.MAX_PARTICIPANTS);
-
         const rejectionMessage: PasswordMessage = {
           type: 'MAX_PARTICIPANTS_EXCEEDED',
           payload: {
@@ -118,7 +115,6 @@ export function usePasswordProtection({
         return;
       }
 
-      // Wait a bit to ensure participant's listener is ready
       setTimeout(() => {
         startPasswordFlow();
       }, 100);
