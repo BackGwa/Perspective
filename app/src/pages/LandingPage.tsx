@@ -61,6 +61,8 @@ export function LandingPage() {
 
     // Password-related state (Participant)
     const [participantPassword, setParticipantPassword] = useState('');
+    const participantPasswordRef = useRef('');
+    participantPasswordRef.current = participantPassword;
     const [isAwaitingPasswordVerification, setIsAwaitingPasswordVerification] = useState(false);
     const [dataConnectionForVerification, setDataConnectionForVerification] = useState<DataConnection | null>(null);
     const dataConnectionForVerificationRef = useRef<DataConnection | null>(null);
@@ -205,7 +207,8 @@ export function LandingPage() {
             setIsAwaitingPasswordVerification(false);
 
             // Save session secret so participant can encrypt/decrypt chat messages
-            setSessionSecret(participantPassword.trim() || null);
+            // Use ref to avoid stale closure capturing empty participantPassword from join-click time
+            setSessionSecret(participantPasswordRef.current.trim() || null);
 
             // Save peer and data connection to context for reuse in ParticipantPage
             const currentTempPeer = tempPeerForVerificationRef.current;
