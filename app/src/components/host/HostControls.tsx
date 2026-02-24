@@ -116,7 +116,6 @@ export function HostControls({
                   className={`controls-overlay__chat-message ${message.role === 'host' ? 'controls-overlay__chat-message--right' : 'controls-overlay__chat-message--left'}`}
                 >
                   {message.text}
-                  {message.encrypted && <span style={{ marginLeft: '4px' }}>🔒</span>}
                 </div>
               ))}
             </div>
