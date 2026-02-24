@@ -75,13 +75,14 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
     }
 
     try {
-      await mediaService.switchCamera(streamState.stream);
+      const newStream = await mediaService.switchCamera(streamState.stream);
+      setStream(newStream, 'camera');
     } catch (error) {
       console.error('Failed to switch camera:', error);
       const err = error instanceof Error ? error : new Error('Failed to switch camera');
       setError(err);
     }
-  }, [streamState.stream, streamState.sourceType, setError]);
+  }, [streamState.stream, streamState.sourceType, setStream, setError]);
 
   const streamRef = useRef<MediaStream | null>(null);
 

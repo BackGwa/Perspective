@@ -184,20 +184,27 @@ class MediaService {
 
     try {
       const currentVideoTrack = currentStream.getVideoTracks()[0];
+
+      const newCameraStream = await this.getCameraStream(newFacingMode);
+      const newVideoTrack = newCameraStream.getVideoTracks()[0];
+
+      // Build a new MediaStream so that React detects the reference change,
+      // which triggers replaceTrack on all active peer connections.
+      const updatedStream = new MediaStream();
+      if (newVideoTrack) {
+        updatedStream.addTrack(newVideoTrack);
+      }
+      currentStream.getAudioTracks().forEach(track => updatedStream.addTrack(track));
+
+      // Stop the old video track now that the new one is live.
       if (currentVideoTrack) {
         currentVideoTrack.stop();
-        currentStream.removeTrack(currentVideoTrack);
       }
+      // Discard the duplicate audio tracks from the temporary getUserMedia stream.
+      newCameraStream.getAudioTracks().forEach(track => track.stop());
 
-      const newStream = await this.getCameraStream(newFacingMode);
-      const newVideoTrack = newStream.getVideoTracks()[0];
-
-      if (newVideoTrack) {
-        currentStream.addTrack(newVideoTrack);
-      }
-
-      newStream.getAudioTracks().forEach(track => track.stop());
-      return currentStream;
+      this.currentStream = updatedStream;
+      return updatedStream;
     } catch (error) {
       throw this.handleMediaError(error);
     }
