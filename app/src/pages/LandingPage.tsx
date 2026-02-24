@@ -204,6 +204,9 @@ export function LandingPage() {
             setIsConnecting(false);
             setIsAwaitingPasswordVerification(false);
 
+            // Save session secret so participant can encrypt/decrypt chat messages
+            setSessionSecret(participantPassword.trim() || null);
+
             // Save peer and data connection to context for reuse in ParticipantPage
             const currentTempPeer = tempPeerForVerificationRef.current;
             if (currentTempPeer) {
