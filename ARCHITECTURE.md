@@ -126,16 +126,3 @@ flowchart TD
     H --> L[stop sharing]
     L --> M[stop all tracks + clear stream + destroy peer]
 ```
-
-## 6) Route-Level Structure
-```mermaid
-flowchart LR
-    App[App] --> EB[ErrorBoundary]
-    EB --> SP[StreamProvider]
-    SP --> R[Hash Router]
-    R --> LP[/]
-    R --> HP[/host]
-    R --> PP[/share?peer=...]
-    HP --> CP1[ChatProvider]
-    PP --> CP2[ChatProvider]
-```
