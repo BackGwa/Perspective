@@ -29,12 +29,15 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       ...reactHooks.configs['recommended-latest'].rules,
+      'no-undef': 'off',
+      'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
     },
