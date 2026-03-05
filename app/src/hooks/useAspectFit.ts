@@ -5,7 +5,7 @@ type FitStyle = {
   height: string;
 };
 
-export function useAspectFit(containerRef: RefObject<HTMLElement>) {
+export function useAspectFit(containerRef: RefObject<HTMLElement | null>) {
   const [frameStyle, setFrameStyle] = useState<FitStyle>({ width: '100%', height: '100%' });
   const aspectRef = useRef<number | null>(null);
 

@@ -26,7 +26,7 @@ interface HostControlsProps {
   isOverlayVisible: boolean;
   isQRPanelVisible: boolean;
   isChatVisible: boolean;
-  overlayRef: RefObject<HTMLDivElement>;
+  overlayRef: RefObject<HTMLDivElement | null>;
   shareLink: string;
   sourceType: MediaSourceType | null;
   canSwitchCamera: boolean;

@@ -3,7 +3,7 @@ import { startContinuousScanning } from '../utils/qrScanner';
 import type { QRScanResult } from '../types/qr.types';
 
 interface UseQRScannerOptions {
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   enabled: boolean; // Only scan when enabled
   onScan: (result: QRScanResult) => void;
   onError: (error: string) => void;

@@ -10,7 +10,7 @@ const getIsCompactLayout = () => {
   return window.matchMedia(`(max-width: ${VALIDATION.DESKTOP_BREAKPOINT}px)`).matches;
 };
 
-export function useControlsOverlay(overlayRef: RefObject<HTMLElement>) {
+export function useControlsOverlay(overlayRef: RefObject<HTMLElement | null>) {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isCompactLayout, setIsCompactLayout] = useState(getIsCompactLayout);
   const hideTimeoutRef = useRef<number | null>(null);

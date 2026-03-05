@@ -20,7 +20,7 @@ interface ParticipantControlsProps {
     isOverlayVisible: boolean;
     isQRPanelVisible: boolean;
     isChatVisible: boolean;
-    overlayRef: RefObject<HTMLDivElement>;
+    overlayRef: RefObject<HTMLDivElement | null>;
     shareLink: string;
     unreadCount: number;
     onToggleAudio: () => void;
