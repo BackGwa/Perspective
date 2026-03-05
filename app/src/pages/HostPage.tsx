@@ -21,7 +21,7 @@ function HostPageInner() {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
-  const disconnectRef = useRef<() => void>();
+  const disconnectRef = useRef<(() => void) | undefined>(undefined);
   const { peerId, connectionStatus, sessionSecret } = useStreamContext();
   const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
 
