@@ -20,8 +20,8 @@ export function useQRScanner({
   const stopScanningRef = useRef<(() => void) | null>(null);
 
   // Memoize callbacks to prevent effect re-runs
-  const stableOnScan = useCallback(onScan, [onScan]);
-  const stableOnError = useCallback(onError, [onError]);
+  const stableOnScan = useCallback((result: QRScanResult) => onScan(result), [onScan]);
+  const stableOnError = useCallback((error: string) => onError(error), [onError]);
 
   useEffect(() => {
     if (!enabled || !videoRef.current) {

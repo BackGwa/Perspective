@@ -29,7 +29,7 @@ export function validateQRCodeURL(scannedURL: string): URLValidationResult {
       peerId: peerId.trim()
     };
 
-  } catch (err) {
+  } catch (_err) {
     return {
       isValid: false,
       error: 'MALFORMED_URL'
