@@ -120,6 +120,7 @@ class MediaService {
   }
 
   async getStream(sourceType: MediaSourceType): Promise<MediaStream> {
+    const previousStream = this.currentStream;
     this.sourceType = sourceType;
     const stream = sourceType === 'camera'
       ? await this.getCameraStream()
@@ -136,6 +137,10 @@ class MediaService {
       if (audioTrack) {
         this.microphoneTrack = audioTrack;
       }
+    }
+
+    if (previousStream && previousStream !== stream) {
+      this.stopStream(previousStream);
     }
 
     return stream;
@@ -182,10 +187,12 @@ class MediaService {
 
     const newFacingMode: CameraFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
 
+    let newCameraStream: MediaStream | null = null;
+
     try {
       const currentVideoTrack = currentStream.getVideoTracks()[0];
 
-      const newCameraStream = await this.getCameraStream(newFacingMode);
+      newCameraStream = await this.getCameraStream(newFacingMode);
       const newVideoTrack = newCameraStream.getVideoTracks()[0];
 
       // Build a new MediaStream so that React detects the reference change,
@@ -206,6 +213,9 @@ class MediaService {
       this.currentStream = updatedStream;
       return updatedStream;
     } catch (error) {
+      if (newCameraStream) {
+        newCameraStream.getTracks().forEach(track => track.stop());
+      }
       throw this.handleMediaError(error);
     }
   }

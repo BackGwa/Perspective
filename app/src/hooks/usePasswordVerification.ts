@@ -10,6 +10,7 @@ interface UsePasswordVerificationOptions {
   onApproved?: () => void;
   onRejected?: (reason: string) => void;
   onMaxRetriesExceeded?: () => void;
+  onCapacityExceeded?: (reason: string) => void;
   onPasswordRequired?: () => void;
 }
 
@@ -18,6 +19,7 @@ export function usePasswordVerification({
   onApproved,
   onRejected,
   onMaxRetriesExceeded,
+  onCapacityExceeded,
   onPasswordRequired
 }: UsePasswordVerificationOptions) {
   const [isVerifying, setIsVerifying] = useState(false);
@@ -57,14 +59,16 @@ export function usePasswordVerification({
         break;
       }
 
-      case 'MAX_PARTICIPANTS_EXCEEDED':
+      case 'MAX_PARTICIPANTS_EXCEEDED': {
+        const reason = message.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED;
         nonceRef.current = null;
         setIsVerifying(false);
-        setErrorMessage(message.payload?.reason || ERROR_MESSAGES.MAX_PARTICIPANTS_EXCEEDED);
-        onMaxRetriesExceeded?.();
+        setErrorMessage(reason);
+        onCapacityExceeded?.(reason);
         break;
+      }
     }
-  }, [onApproved, onMaxRetriesExceeded, onPasswordRequired, onRejected]);
+  }, [onApproved, onCapacityExceeded, onMaxRetriesExceeded, onPasswordRequired, onRejected]);
 
   const submitPassword = useCallback(async (password: string) => {
     if (!dataConnection) {

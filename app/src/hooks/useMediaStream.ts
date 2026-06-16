@@ -12,22 +12,34 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
   const { cleanupOnUnmount = true, onStreamEnded } = options;
   const { streamState, setStream, setPaused, setMuted, setError, clearStream } = useStreamContext();
   const isStoppingRef = useRef(false);
+  const isSwitchingCameraRef = useRef(false);
+  const capturePromiseRef = useRef<Promise<MediaStream> | null>(null);
   const hasHandledStreamEndRef = useRef(false);
 
   const startCapture = useCallback(async (sourceType: MediaSourceType) => {
-    try {
-      setError(null);
-      const stream = await mediaService.getStream(sourceType);
-      setStream(stream, sourceType);
-      setPaused(false);
-      setMuted(false);
-      return stream;
-    } catch (error) {
-      console.error('[useMediaStream] startCapture error:', error);
-      const err = error instanceof Error ? error : new Error('Failed to capture media');
-      setError(err);
-      throw err;
+    if (capturePromiseRef.current) {
+      return capturePromiseRef.current;
     }
+
+    capturePromiseRef.current = (async () => {
+      try {
+        setError(null);
+        const stream = await mediaService.getStream(sourceType);
+        setStream(stream, sourceType);
+        setPaused(false);
+        setMuted(false);
+        return stream;
+      } catch (error) {
+        console.error('[useMediaStream] startCapture error:', error);
+        const err = error instanceof Error ? error : new Error('Failed to capture media');
+        setError(err);
+        throw err;
+      } finally {
+        capturePromiseRef.current = null;
+      }
+    })();
+
+    return capturePromiseRef.current;
   }, [setStream, setPaused, setMuted, setError]);
 
   const stopCapture = useCallback(() => {
@@ -69,21 +81,35 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
   }, [streamState.sourceType]);
 
   const switchCamera = useCallback(async () => {
+    if (isSwitchingCameraRef.current) return;
+
     if (!streamState.stream || streamState.sourceType !== 'camera') {
       console.warn('Cannot switch camera: not in camera mode');
       return;
     }
 
+    let switched = false;
+
     try {
+      isSwitchingCameraRef.current = true;
       const newStream = await mediaService.switchCamera(streamState.stream);
       setStream(newStream, 'camera');
       if (streamState.isPaused) {
         mediaService.toggleVideo(newStream, false);
       }
+      switched = true;
     } catch (error) {
       console.error('Failed to switch camera:', error);
       const err = error instanceof Error ? error : new Error('Failed to switch camera');
       setError(err);
+    } finally {
+      if (switched) {
+        window.setTimeout(() => {
+          isSwitchingCameraRef.current = false;
+        }, 0);
+      } else {
+        isSwitchingCameraRef.current = false;
+      }
     }
   }, [streamState.stream, streamState.sourceType, streamState.isPaused, setStream, setError]);
 
@@ -103,7 +129,7 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
     if (!stream) return;
 
     const handleTrackEnded = () => {
-      if (isStoppingRef.current || hasHandledStreamEndRef.current) return;
+      if (isStoppingRef.current || isSwitchingCameraRef.current || hasHandledStreamEndRef.current) return;
       hasHandledStreamEndRef.current = true;
       stopCapture();
       onStreamEnded?.();
