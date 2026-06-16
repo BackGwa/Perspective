@@ -13,18 +13,14 @@ export function LocalPreview({ stream }: LocalPreviewProps) {
   const { frameStyle, setAspect } = useAspectFit(containerRef);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream ?? null;
-    }
-  }, [stream]);
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
 
-  useEffect(() => {
+    videoElement.srcObject = stream ?? null;
     return () => {
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+      videoElement.srcObject = null;
     };
-  }, []);
+  }, [stream]);
 
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;

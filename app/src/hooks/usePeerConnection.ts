@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MediaConnection, DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
 import type { MediaSourceType } from '../types/media.types';
@@ -39,6 +39,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   const pendingPasswordApprovalRef = useRef<Set<string>>(new Set());
   const streamRef = useRef<MediaStream | null>(stream || null);
   const hasInitialized = useRef(false);
+  const [participantCount, setParticipantCount] = useState(0);
 
   useEffect(() => {
     streamRef.current = stream || null;
@@ -53,9 +54,11 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
         degradationPreference: getDegradationPreference(sourceType)
       });
       participantsRef.current.set(participantId, call);
+      setParticipantCount(participantsRef.current.size);
 
       call.on('close', () => {
         participantsRef.current.delete(participantId);
+        setParticipantCount(participantsRef.current.size);
       });
     } else {
       pendingParticipantsRef.current.add(participantId);
@@ -66,10 +69,14 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     pendingPasswordApprovalRef.current.delete(participantId);
   }, []);
 
+  const getCurrentParticipantCount = useCallback(() => {
+    return participantsRef.current.size + pendingPasswordApprovalRef.current.size;
+  }, []);
+
   const { setupPasswordListener } = usePasswordProtection({
     sessionSecret,
     domainPolicy: sessionDomainPolicy,
-    currentParticipantCount: participantsRef.current.size + pendingPasswordApprovalRef.current.size,
+    getCurrentParticipantCount,
     onParticipantApproved: handleParticipantApproved,
     onParticipantRejected: handleParticipantRejected
   });
@@ -114,7 +121,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
       setConnectionStatus('failed');
       hasInitialized.current = false;
     }
-  }, [role, setPeerId, setConnectionStatus]);
+  }, [role, setPeerId, setConnectionStatus, setupPasswordListener, onChatMessage]);
 
   const initializeParticipant = useCallback(async () => {
     if (hasInitialized.current || !hostPeerId) return;
@@ -214,6 +221,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   const disconnect = useCallback(() => {
     peerService.destroyPeer();
     participantsRef.current.clear();
+    setParticipantCount(0);
     setConnectionStatus('closed');
     setPeerId(null);
     setRemoteStream(null);
@@ -261,9 +269,11 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
             degradationPreference: getDegradationPreference(sourceType)
           });
           participantsRef.current.set(participantId, call);
+          setParticipantCount(participantsRef.current.size);
 
           call.on('close', () => {
             participantsRef.current.delete(participantId);
+            setParticipantCount(participantsRef.current.size);
           });
         });
         pendingParticipantsRef.current.clear();
@@ -288,6 +298,6 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
     connectionStatus,
     disconnect,
     getShareLink,
-    participantCount: participantsRef.current.size
+    participantCount
   };
 }

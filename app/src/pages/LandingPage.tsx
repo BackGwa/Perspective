@@ -62,7 +62,6 @@ export function LandingPage() {
     // Password-related state (Participant)
     const [participantPassword, setParticipantPassword] = useState('');
     const participantPasswordRef = useRef('');
-    participantPasswordRef.current = participantPassword;
     const [isAwaitingPasswordVerification, setIsAwaitingPasswordVerification] = useState(false);
     const [dataConnectionForVerification, setDataConnectionForVerification] = useState<DataConnection | null>(null);
     const dataConnectionForVerificationRef = useRef<DataConnection | null>(null);
@@ -77,6 +76,15 @@ export function LandingPage() {
     const landingPageRef = useRef<HTMLDivElement>(null);
     const leftPanelRef = useRef<HTMLDivElement>(null);
     const qrVideoRef = useRef<HTMLVideoElement>(null);
+    const qrCameraStreamRef = useRef<MediaStream | null>(null);
+
+    useEffect(() => {
+        participantPasswordRef.current = participantPassword;
+    }, [participantPassword]);
+
+    useEffect(() => {
+        qrCameraStreamRef.current = qrCameraStream;
+    }, [qrCameraStream]);
 
     useEffect(() => {
         if (!menuRef.current) return;
@@ -249,6 +257,98 @@ export function LandingPage() {
         }
     });
 
+    const startJoinFlow = useCallback(async (peerIdToJoin: string) => {
+        try {
+            setError(null);
+            setIsConnecting(true);
+
+            const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
+            tempPeerForVerificationRef.current = cleanedPeer;
+            setParticipantPeer(null);
+            setRemoteStream(null);
+            setConnectionStatus('idle');
+            hostPeerIdForVerificationRef.current = peerIdToJoin;
+
+            const { default: Peer } = await import('peerjs');
+            const tempPeer = new Peer({
+                ...PEER_SERVER_CONFIG,
+                config: {
+                    iceServers: PEER_CONFIG.iceServers
+                },
+                debug: PEER_CONFIG.debug
+            });
+            tempPeerForVerificationRef.current = tempPeer;
+
+            tempPeer.on('open', () => {
+                const dataConn = tempPeer.connect(peerIdToJoin);
+
+                dataConn.on('open', () => {
+                    setDataConnectionForVerification(dataConn);
+                    dataConnectionForVerificationRef.current = dataConn;
+
+                    const joinRequestMessage: SessionJoinRequestMessage = {
+                        type: 'SESSION_JOIN_REQUEST',
+                        payload: {
+                            origin: window.location.origin
+                        }
+                    };
+
+                    setTimeout(() => {
+                        if (dataConn.open) {
+                            dataConn.send(joinRequestMessage);
+                        }
+                    }, TIMING.JOIN_REQUEST_DELAY);
+
+                    let isPasswordRoom = false;
+                    dataConn.on('data', (data: unknown) => {
+                        if (isSessionJoinRejectedMessage(data)) {
+                            setError(data.payload.reason);
+                            setIsConnecting(false);
+                            setIsAwaitingPasswordVerification(false);
+                            hostPeerIdForVerificationRef.current = null;
+                            setDataConnectionForVerification(null);
+                            dataConnectionForVerificationRef.current = null;
+                            const cleanedPeer = cleanupParticipantPeer(tempPeer);
+                            tempPeerForVerificationRef.current = cleanedPeer;
+                            dataConn.close();
+                            return;
+                        }
+
+                        if (!isValidPasswordMessage(data)) return;
+
+                        if (data.type === 'PASSWORD_REQUEST') {
+                            if (isPasswordRoom) return;
+                            isPasswordRoom = true;
+                        }
+
+                        handlePasswordMessage(data);
+                    });
+                });
+
+                dataConn.on('error', (err) => {
+                    console.error('[LandingPage] Data connection error:', err);
+                    setError(ERROR_MESSAGES.CONNECTION_ERROR);
+                    setIsConnecting(false);
+                    const cleanedPeer = cleanupParticipantPeer(tempPeer);
+                    tempPeerForVerificationRef.current = cleanedPeer;
+                });
+            });
+
+            tempPeer.on('error', (err) => {
+                console.error('[LandingPage] Peer error during join:', err);
+                setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
+                setIsConnecting(false);
+                const cleanedPeer = cleanupParticipantPeer(tempPeer);
+                tempPeerForVerificationRef.current = cleanedPeer;
+            });
+
+        } catch (err) {
+            console.error('[LandingPage] Join flow error:', err);
+            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
+            setIsConnecting(false);
+        }
+    }, [handlePasswordMessage, setConnectionStatus, setParticipantPeer, setRemoteStream]);
+
     // Handle location state (errors and auto-join)
     const hasHandledAutoJoin = useRef(false);
 
@@ -266,7 +366,7 @@ export function LandingPage() {
                 startJoinFlow(location.state.sessionId);
             }, TIMING.AUTO_JOIN_DELAY);
         }
-    }, [location]);
+    }, [location, startJoinFlow]);
 
     useEffect(() => {
         setPasswordInputError(null);
@@ -403,15 +503,17 @@ export function LandingPage() {
         }
     };
 
-    const stopQRCamera = () => {
-        if (qrCameraStream) {
-            qrCameraStream.getTracks().forEach(track => track.stop());
+    const stopQRCamera = useCallback(() => {
+        const currentStream = qrCameraStreamRef.current;
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            qrCameraStreamRef.current = null;
             setQrCameraStream(null);
         }
         if (qrVideoRef.current) {
             qrVideoRef.current.srcObject = null;
         }
-    };
+    }, []);
 
     const handleJoinWithQR = () => {
         if (joinMode === 'qr') {
@@ -444,7 +546,15 @@ export function LandingPage() {
             setSessionId(result.peerId);
 
             // 2. Stop camera
-            stopQRCamera();
+            const currentStream = qrCameraStreamRef.current;
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                qrCameraStreamRef.current = null;
+                setQrCameraStream(null);
+            }
+            if (qrVideoRef.current) {
+                qrVideoRef.current.srcObject = null;
+            }
 
             // 3. Switch menu state (this triggers the UI transition)
             setJoinMode('input');
@@ -458,7 +568,7 @@ export function LandingPage() {
             setIsConnecting(false);
             // Stay in input mode with error shown
         }
-    }, [stopQRCamera, setJoinMode, setError, setIsConnecting, setSessionId]);
+    }, [setJoinMode, setError, setIsConnecting, setSessionId, startJoinFlow]);
 
     // QR Scanner hook
     const { stopScanning } = useQRScanner({
@@ -478,102 +588,6 @@ export function LandingPage() {
     };
 
     // Join Actions
-    const startJoinFlow = async (peerIdToJoin: string) => {
-        try {
-            setError(null);
-            setIsConnecting(true);
-
-            // Clean up any previous session state
-            const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
-            tempPeerForVerificationRef.current = cleanedPeer;
-            setParticipantPeer(null);
-            setRemoteStream(null);
-            setConnectionStatus('idle');
-            hostPeerIdForVerificationRef.current = peerIdToJoin;
-
-            // Create a temporary peer to establish data connection
-            const { default: Peer } = await import('peerjs');
-            const tempPeer = new Peer({
-                ...PEER_SERVER_CONFIG,
-                config: {
-                    iceServers: PEER_CONFIG.iceServers
-                },
-                debug: PEER_CONFIG.debug
-            });
-            tempPeerForVerificationRef.current = tempPeer;
-
-            tempPeer.on('open', () => {
-                const dataConn = tempPeer.connect(peerIdToJoin);
-
-                dataConn.on('open', () => {
-                    setDataConnectionForVerification(dataConn);
-                    dataConnectionForVerificationRef.current = dataConn;
-
-                    const joinRequestMessage: SessionJoinRequestMessage = {
-                        type: 'SESSION_JOIN_REQUEST',
-                        payload: {
-                            origin: window.location.origin
-                        }
-                    };
-
-                    setTimeout(() => {
-                        if (dataConn.open) {
-                            dataConn.send(joinRequestMessage);
-                        }
-                    }, TIMING.JOIN_REQUEST_DELAY);
-
-                    // Set up data listener IMMEDIATELY to catch host's initial response
-                    // This prevents missing PASSWORD_REQUEST or PASSWORD_APPROVED messages
-                    let isPasswordRoom = false;
-                    dataConn.on('data', (data: unknown) => {
-                        if (isSessionJoinRejectedMessage(data)) {
-                            setError(data.payload.reason);
-                            setIsConnecting(false);
-                            setIsAwaitingPasswordVerification(false);
-                            hostPeerIdForVerificationRef.current = null;
-                            setDataConnectionForVerification(null);
-                            dataConnectionForVerificationRef.current = null;
-                            const cleanedPeer = cleanupParticipantPeer(tempPeer);
-                            tempPeerForVerificationRef.current = cleanedPeer;
-                            dataConn.close();
-                            return;
-                        }
-
-                        if (!isValidPasswordMessage(data)) return;
-
-                        if (data.type === 'PASSWORD_REQUEST') {
-                            if (isPasswordRoom) return;
-                            isPasswordRoom = true;
-                        }
-
-                        handlePasswordMessage(data);
-                    });
-                });
-
-                dataConn.on('error', (err) => {
-                    console.error('[LandingPage] Data connection error:', err);
-                    setError(ERROR_MESSAGES.CONNECTION_ERROR);
-                    setIsConnecting(false);
-                    const cleanedPeer = cleanupParticipantPeer(tempPeer);
-                    tempPeerForVerificationRef.current = cleanedPeer;
-                });
-            });
-
-            tempPeer.on('error', (err) => {
-                console.error('[LandingPage] Peer error during join:', err);
-                setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-                setIsConnecting(false);
-                const cleanedPeer = cleanupParticipantPeer(tempPeer);
-                tempPeerForVerificationRef.current = cleanedPeer;
-            });
-
-        } catch (err) {
-            console.error('[LandingPage] Join flow error:', err);
-            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-            setIsConnecting(false);
-        }
-    };
-
     const handleJoin = async () => {
         if (!sessionId.trim()) {
             setError(ERROR_MESSAGES.PLEASE_ENTER_VALID_SESSION_ID);

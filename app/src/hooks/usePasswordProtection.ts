@@ -12,7 +12,7 @@ import { generateNonce, hmacSha256 } from '../utils/passwordCrypto';
 interface UsePasswordProtectionOptions {
   sessionSecret: string | null;
   domainPolicy: DomainPolicy;
-  currentParticipantCount: number;
+  getCurrentParticipantCount: () => number;
   onParticipantApproved?: (peerId: string) => void;
   onParticipantRejected?: (peerId: string) => void;
 }
@@ -20,7 +20,7 @@ interface UsePasswordProtectionOptions {
 export function usePasswordProtection({
   sessionSecret,
   domainPolicy,
-  currentParticipantCount,
+  getCurrentParticipantCount,
   onParticipantApproved,
   onParticipantRejected
 }: UsePasswordProtectionOptions) {
@@ -68,7 +68,7 @@ export function usePasswordProtection({
     const startPasswordFlow = () => {
       if (isResolved) return;
 
-      if (currentParticipantCount >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
+      if (getCurrentParticipantCount() >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
         const rejectionMessage: PasswordMessage = {
           type: 'MAX_PARTICIPANTS_EXCEEDED',
           payload: {
@@ -211,7 +211,7 @@ export function usePasswordProtection({
         markRejected();
       }
     });
-  }, [sessionSecret, domainPolicy, currentParticipantCount, onParticipantApproved, onParticipantRejected]);
+  }, [sessionSecret, domainPolicy, getCurrentParticipantCount, onParticipantApproved, onParticipantRejected]);
 
   return {
     setupPasswordListener
