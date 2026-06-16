@@ -6,14 +6,15 @@ import { PARTICIPANT_CONFIG, ERROR_MESSAGES } from '../config/constants';
 import type { PasswordMessage } from '../types/password.types';
 import { isValidPasswordMessage } from '../types/password.types';
 import type { DomainPolicy, SessionJoinRejectedMessage } from '../types/session.types';
-import { isSessionJoinRequestMessage } from '../types/session.types';
+import { isSessionJoinRequestMessage, isSessionParticipantReadyMessage } from '../types/session.types';
 import { generateNonce, hmacSha256 } from '../utils/passwordCrypto';
 
 interface UsePasswordProtectionOptions {
   sessionSecret: string | null;
   domainPolicy: DomainPolicy;
-  getCurrentParticipantCount: () => number;
-  onParticipantApproved?: (peerId: string) => void;
+  getCurrentParticipantCount: (peerId: string) => number;
+  onParticipantApproved?: (peerId: string, dataConnection: DataConnection) => void;
+  onParticipantReady?: (peerId: string, dataConnection: DataConnection) => void;
   onParticipantRejected?: (peerId: string) => void;
 }
 
@@ -22,6 +23,7 @@ export function usePasswordProtection({
   domainPolicy,
   getCurrentParticipantCount,
   onParticipantApproved,
+  onParticipantReady,
   onParticipantRejected
 }: UsePasswordProtectionOptions) {
   const participantRetries = useRef<Map<string, number>>(new Map());
@@ -47,7 +49,7 @@ export function usePasswordProtection({
       approvedParticipants.current.add(peerId);
       participantRetries.current.delete(peerId);
       participantNonces.current.delete(peerId);
-      onParticipantApproved?.(peerId);
+      onParticipantApproved?.(peerId, dataConnection);
     };
 
     const rejectForDomain = () => {
@@ -68,7 +70,7 @@ export function usePasswordProtection({
     const startPasswordFlow = () => {
       if (isResolved) return;
 
-      if (getCurrentParticipantCount() >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
+      if (getCurrentParticipantCount(peerId) >= PARTICIPANT_CONFIG.MAX_PARTICIPANTS) {
         const rejectionMessage: PasswordMessage = {
           type: 'MAX_PARTICIPANTS_EXCEEDED',
           payload: {
@@ -191,8 +193,17 @@ export function usePasswordProtection({
         return;
       }
 
+      if (isSessionParticipantReadyMessage(data)) {
+        if (approvedParticipants.current.has(peerId)) {
+          onParticipantReady?.(peerId, dataConnection);
+        }
+        return;
+      }
+
       if (!isValidPasswordMessage(data)) {
-        console.warn('[PasswordProtection] Invalid message received:', data);
+        if (!approvedParticipants.current.has(peerId)) {
+          console.warn('[PasswordProtection] Invalid message received:', data);
+        }
         return;
       }
 
@@ -211,7 +222,7 @@ export function usePasswordProtection({
         markRejected();
       }
     });
-  }, [sessionSecret, domainPolicy, getCurrentParticipantCount, onParticipantApproved, onParticipantRejected]);
+  }, [sessionSecret, domainPolicy, getCurrentParticipantCount, onParticipantApproved, onParticipantReady, onParticipantRejected]);
 
   return {
     setupPasswordListener
