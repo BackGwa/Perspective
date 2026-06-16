@@ -6,6 +6,10 @@ import type { ChatDataMessage } from '../types/chat.types';
 import { isChatDataMessage } from '../types/chat.types';
 
 const MAX_MESSAGE_LENGTH = 128;
+const MAX_ID_LENGTH = 128;
+const MAX_ENCRYPTED_MESSAGE_LENGTH = 1024;
+const AES_GCM_IV_HEX_LENGTH = 24;
+const HEX_PATTERN = /^[0-9a-f]+$/i;
 
 interface UseChatMessagingOptions {
   role: 'host' | 'participant';
@@ -14,6 +18,29 @@ interface UseChatMessagingOptions {
   sessionSecret: string | null;
   connectionTimestamp: number;
 }
+
+const isValidHex = (value: string, maxLength: number) => {
+  return value.length > 0 && value.length <= maxLength && value.length % 2 === 0 && HEX_PATTERN.test(value);
+};
+
+const isValidIncomingMessage = (message: ChatDataMessage, hasSessionSecret: boolean) => {
+  const { payload } = message;
+
+  if (!Number.isFinite(payload.timestamp)) return false;
+  if (payload.id.length === 0 || payload.id.length > MAX_ID_LENGTH) return false;
+  if (payload.senderId.length === 0 || payload.senderId.length > MAX_ID_LENGTH) return false;
+
+  if (hasSessionSecret) {
+    if (!payload.encrypted || !payload.iv) return false;
+    return (
+      payload.iv.length === AES_GCM_IV_HEX_LENGTH &&
+      isValidHex(payload.iv, AES_GCM_IV_HEX_LENGTH) &&
+      isValidHex(payload.text, MAX_ENCRYPTED_MESSAGE_LENGTH)
+    );
+  }
+
+  return !payload.encrypted && payload.text.length <= MAX_MESSAGE_LENGTH;
+};
 
 export function useChatMessaging({
   role,
@@ -63,7 +90,9 @@ export function useChatMessaging({
     };
 
     if (role === 'host') {
-      peerService.broadcastDataMessage(message);
+      peerService.getChatParticipantIds().forEach((participantId) => {
+        peerService.sendDataMessage(participantId, message);
+      });
     } else if (role === 'participant' && hostPeerId) {
       peerService.sendDataMessage(hostPeerId, message);
     } else {
@@ -86,6 +115,16 @@ export function useChatMessaging({
     }
 
     const { payload } = data;
+    const hasSessionSecret = !!sessionSecret;
+
+    if (!isValidIncomingMessage(data, hasSessionSecret)) {
+      return;
+    }
+
+    if (payload.timestamp < connectionTimestamp) {
+      return;
+    }
+
     let displayText = payload.text;
 
     if (payload.encrypted && sessionSecret && payload.iv) {
@@ -97,12 +136,12 @@ export function useChatMessaging({
       }
     }
 
-    if (payload.timestamp < connectionTimestamp) {
+    if (displayText.length > MAX_MESSAGE_LENGTH) {
       return;
     }
 
     if (role === 'host') {
-      const participantIds = peerService.getAllParticipantIds();
+      const participantIds = peerService.getChatParticipantIds();
       participantIds.forEach((participantId) => {
         if (participantId !== payload.senderId) {
           peerService.sendDataMessage(participantId, data);

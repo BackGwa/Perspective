@@ -20,6 +20,7 @@ class PeerService {
   private peer: Peer | null = null;
   private activeCalls: Map<string, MediaConnection> = new Map();
   private dataConnections: Map<string, DataConnection> = new Map();
+  private chatEnabledPeers: Set<string> = new Set();
   private peerModulePromise: Promise<typeof import('peerjs')> | null = null;
 
   private async loadPeerModule() {
@@ -74,6 +75,7 @@ class PeerService {
 
         conn.on('close', () => {
           this.dataConnections.delete(conn.peer);
+          this.chatEnabledPeers.delete(conn.peer);
         });
       });
     }
@@ -130,6 +132,7 @@ class PeerService {
 
       dataConnection.on('close', () => {
         this.dataConnections.delete(hostPeerId);
+        this.chatEnabledPeers.delete(hostPeerId);
       });
     });
   }
@@ -144,6 +147,7 @@ class PeerService {
   destroyPeer(): void {
     this.closeAllCalls();
     this.dataConnections.clear();
+    this.chatEnabledPeers.clear();
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
@@ -175,11 +179,27 @@ class PeerService {
     return Array.from(this.dataConnections.keys());
   }
 
+  getChatParticipantIds(): string[] {
+    return Array.from(this.chatEnabledPeers).filter((peerId) => {
+      const connection = this.dataConnections.get(peerId);
+      return !!connection?.open;
+    });
+  }
+
+  setChatEnabled(peerId: string, enabled: boolean): void {
+    if (enabled) {
+      this.chatEnabledPeers.add(peerId);
+    } else {
+      this.chatEnabledPeers.delete(peerId);
+    }
+  }
+
   setDataConnection(peerId: string, connection: DataConnection): void {
     this.dataConnections.set(peerId, connection);
 
     connection.on('close', () => {
       this.dataConnections.delete(peerId);
+      this.chatEnabledPeers.delete(peerId);
     });
   }
 

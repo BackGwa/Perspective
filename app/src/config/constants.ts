@@ -1,6 +1,28 @@
 import type { PeerConfig } from '../types/peer.types';
 import type { MediaConstraints } from '../types/media.types';
 
+const parseIntegerEnv = (value: string | undefined, fallback: number, min: number, max?: number): number => {
+  if (!value) return fallback;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min || (max !== undefined && parsed > max)) {
+    return fallback;
+  }
+
+  return parsed;
+};
+
+const parseOptionalIntegerEnv = (value: string | undefined, min: number, max?: number): number | undefined => {
+  if (!value) return undefined;
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min || (max !== undefined && parsed > max)) {
+    return undefined;
+  }
+
+  return parsed;
+};
+
 const getPeerServerConfig = () => {
   const host = import.meta.env.VITE_PEERJS_HOST;
   const port = import.meta.env.VITE_PEERJS_PORT;
@@ -13,7 +35,7 @@ const getPeerServerConfig = () => {
 
   return {
     host,
-    port: port ? parseInt(port, 10) : undefined,
+    port: parseOptionalIntegerEnv(port, 1, 65535),
     path: path || '/',
     secure
   };
@@ -43,9 +65,9 @@ const getMediaResolution = () => {
   const frameRate = import.meta.env.VITE_MAX_FRAMERATE;
 
   return {
-    width: width ? parseInt(width, 10) : 1920,
-    height: height ? parseInt(height, 10) : 1080,
-    frameRate: frameRate ? parseInt(frameRate, 10) : 30
+    width: parseIntegerEnv(width, 1920, 1, 7680),
+    height: parseIntegerEnv(height, 1080, 1, 4320),
+    frameRate: parseIntegerEnv(frameRate, 30, 1, 120)
   };
 };
 
@@ -112,7 +134,7 @@ export const ERROR_MESSAGES = {
 
 const getMaxPasswordRetries = (): number => {
   const retries = import.meta.env.VITE_MAX_PASSWORD_RETRIES;
-  return retries ? parseInt(retries, 10) : 3;
+  return parseIntegerEnv(retries, 3, 1, 10);
 };
 
 export const PASSWORD_CONFIG = {
@@ -123,7 +145,7 @@ export const PASSWORD_CONFIG = {
 
 const getMaxParticipants = (): number => {
   const maxParticipants = import.meta.env.VITE_MAX_PARTICIPANTS;
-  return maxParticipants ? parseInt(maxParticipants, 10) : 24;
+  return parseIntegerEnv(maxParticipants, 24, 1, 512);
 };
 
 export const PARTICIPANT_CONFIG = {

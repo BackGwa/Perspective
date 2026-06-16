@@ -10,6 +10,7 @@ import { useControlsOverlay } from '../hooks/useControlsOverlay';
 import { ERROR_MESSAGES } from '../config/constants';
 import { cleanupParticipantPeer } from '../utils/peerCleanup';
 import { navigateWithError } from '../utils/navigationHelpers';
+import type { SessionParticipantReadyMessage } from '../types/session.types';
 import '../../styles/components/participant.scss';
 
 function ParticipantPageInner() {
@@ -20,10 +21,11 @@ function ParticipantPageInner() {
   const [isQRPanelVisible, setIsQRPanelVisible] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const isLeavingRef = useRef(false);
+  const hasSentReadyRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const { isOverlayVisible, showOverlay, hideOverlay } = useControlsOverlay(controlsOverlayRef);
 
-  const { peerId, connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer, setParticipantHostConnection, sessionSecret } = useStreamContext();
+  const { peerId, connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer, participantHostConnection, setParticipantHostConnection, sessionSecret } = useStreamContext();
   const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
 
   useEffect(() => {
@@ -58,6 +60,17 @@ function ParticipantPageInner() {
     existingPeer: participantPeer,
     onChatMessage: handleIncomingMessage
   });
+
+  useEffect(() => {
+    if (!participantPeer || !participantHostConnection || !participantHostConnection.open || hasSentReadyRef.current) return;
+
+    const readyMessage: SessionParticipantReadyMessage = {
+      type: 'SESSION_PARTICIPANT_READY'
+    };
+
+    participantHostConnection.send(readyMessage);
+    hasSentReadyRef.current = true;
+  }, [participantPeer, participantHostConnection]);
 
   useEffect(() => {
     if (connectionStatus === 'connected' && !connectionTimestamp) {
@@ -135,6 +148,7 @@ function ParticipantPageInner() {
     setParticipantHostConnection(null);
     setRemoteStream(null);
     setConnectionStatus('idle');
+    hasSentReadyRef.current = false;
     navigate('/', { replace: true });
   };
 

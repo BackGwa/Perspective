@@ -95,6 +95,7 @@ export function startContinuousScanning(
 
     try {
       const result = await scanVideoFrame(video);
+      if (!isScanning) return;
 
       if (result) {
         if (result.valid) {
@@ -102,6 +103,7 @@ export function startContinuousScanning(
           clearInterval(intervalId);
           onScan(result);
         } else {
+          if (!isScanning) return;
           const errorMsg = getQRErrorMessage(result.error!);
           onError(errorMsg);
         }

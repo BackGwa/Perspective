@@ -27,7 +27,7 @@ import { useStreamContext } from '../contexts/StreamContext';
 import { PasswordInput } from '../components/shared/PasswordInput';
 import { usePasswordVerification } from '../hooks/usePasswordVerification';
 import { validateQRCodeURL, getQRErrorMessage } from '../utils/urlValidator';
-import { ERROR_MESSAGES, PEER_CONFIG, PEER_SERVER_CONFIG } from '../config/constants';
+import { ERROR_MESSAGES, PASSWORD_CONFIG, PEER_CONFIG, PEER_SERVER_CONFIG } from '../config/constants';
 import type { DataConnection } from 'peerjs';
 import type Peer from 'peerjs';
 import { isValidPasswordMessage } from '../types/password.types';
@@ -51,6 +51,7 @@ export function LandingPage() {
     const [error, setError] = useState<string | null>(null);
     const [passwordInputError, setPasswordInputError] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
+    const [isStartingCapture, setIsStartingCapture] = useState(false);
     const [sessionId, setSessionId] = useState('');
     const [joinMode, setJoinMode] = useState<JoinMode>('input');
     const [isInputFocused, setIsInputFocused] = useState(false);
@@ -77,6 +78,18 @@ export function LandingPage() {
     const leftPanelRef = useRef<HTMLDivElement>(null);
     const qrVideoRef = useRef<HTMLVideoElement>(null);
     const qrCameraStreamRef = useRef<MediaStream | null>(null);
+    const qrCameraRequestIdRef = useRef(0);
+    const menuStateRef = useRef<MenuState>('root');
+    const joinModeRef = useRef<JoinMode>('input');
+    const joinTimeoutRef = useRef<number | null>(null);
+    const joinFlowResolvedRef = useRef(false);
+    const joinAttemptIdRef = useRef(0);
+    const isStartingCaptureRef = useRef(false);
+
+    useEffect(() => {
+        menuStateRef.current = menuState;
+        joinModeRef.current = joinMode;
+    }, [menuState, joinMode]);
 
     useEffect(() => {
         participantPasswordRef.current = participantPassword;
@@ -198,6 +211,37 @@ export function LandingPage() {
     // Disable cleanup on unmount so the stream persists to HostPage
     const { startCapture } = useMediaStream({ cleanupOnUnmount: false });
 
+    const clearJoinTimeout = useCallback(() => {
+        if (joinTimeoutRef.current) {
+            window.clearTimeout(joinTimeoutRef.current);
+            joinTimeoutRef.current = null;
+        }
+    }, []);
+
+    const failJoin = useCallback((message: string, returnToRoot = false) => {
+        if (joinFlowResolvedRef.current) return;
+        joinFlowResolvedRef.current = true;
+        clearJoinTimeout();
+
+        setError(message);
+        setIsConnecting(false);
+        setIsAwaitingPasswordVerification(false);
+        setParticipantPassword('');
+        hostPeerIdForVerificationRef.current = null;
+        setDataConnectionForVerification(null);
+        dataConnectionForVerificationRef.current = null;
+        setParticipantHostConnection(null);
+        setParticipantPeer(null);
+        setRemoteStream(null);
+        setConnectionStatus('idle');
+        tempPeerForVerificationRef.current = cleanupParticipantPeer(tempPeerForVerificationRef.current);
+
+        if (returnToRoot) {
+            setMenuState('root');
+            setSessionId('');
+        }
+    }, [clearJoinTimeout, setConnectionStatus, setParticipantHostConnection, setParticipantPeer, setRemoteStream]);
+
     // Password verification for participant
     const {
         isVerifying,
@@ -207,10 +251,13 @@ export function LandingPage() {
     } = usePasswordVerification({
         dataConnection: dataConnectionForVerification,
         onPasswordRequired: () => {
+            clearJoinTimeout();
             setIsConnecting(false);
             setIsAwaitingPasswordVerification(true);
         },
         onApproved: () => {
+            joinFlowResolvedRef.current = true;
+            clearJoinTimeout();
             setIsConnecting(false);
             setIsAwaitingPasswordVerification(false);
 
@@ -244,32 +291,44 @@ export function LandingPage() {
             setIsConnecting(false);
         },
         onMaxRetriesExceeded: () => {
-            setIsConnecting(false);
-            setError(ERROR_MESSAGES.PASSWORD_MAX_RETRIES);
-            const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
-            tempPeerForVerificationRef.current = cleanedPeer;
-            setIsAwaitingPasswordVerification(false);
-            hostPeerIdForVerificationRef.current = null;
-            setDataConnectionForVerification(null);
-            dataConnectionForVerificationRef.current = null;
-            setMenuState('root');
-            setSessionId('');
+            failJoin(ERROR_MESSAGES.PASSWORD_MAX_RETRIES, true);
+        },
+        onCapacityExceeded: (reason) => {
+            failJoin(reason, true);
         }
     });
 
     const startJoinFlow = useCallback(async (peerIdToJoin: string) => {
+        const attemptId = joinAttemptIdRef.current + 1;
+        joinAttemptIdRef.current = attemptId;
+        joinFlowResolvedRef.current = false;
+
+        const failCurrentJoin = (message: string, returnToRoot = false) => {
+            if (joinAttemptIdRef.current !== attemptId) return;
+            failJoin(message, returnToRoot);
+        };
+
         try {
             setError(null);
             setIsConnecting(true);
+            setIsAwaitingPasswordVerification(false);
+            clearJoinTimeout();
 
             const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
             tempPeerForVerificationRef.current = cleanedPeer;
             setParticipantPeer(null);
+            setParticipantHostConnection(null);
             setRemoteStream(null);
             setConnectionStatus('idle');
             hostPeerIdForVerificationRef.current = peerIdToJoin;
 
+            joinTimeoutRef.current = window.setTimeout(() => {
+                failCurrentJoin(ERROR_MESSAGES.CONNECTION_TIMED_OUT);
+            }, TIMING.JOIN_CONNECTION_TIMEOUT);
+
             const { default: Peer } = await import('peerjs');
+            if (joinAttemptIdRef.current !== attemptId || joinFlowResolvedRef.current) return;
+
             const tempPeer = new Peer({
                 ...PEER_SERVER_CONFIG,
                 config: {
@@ -280,9 +339,13 @@ export function LandingPage() {
             tempPeerForVerificationRef.current = tempPeer;
 
             tempPeer.on('open', () => {
+                if (joinAttemptIdRef.current !== attemptId || joinFlowResolvedRef.current) return;
+
                 const dataConn = tempPeer.connect(peerIdToJoin);
 
                 dataConn.on('open', () => {
+                    if (joinAttemptIdRef.current !== attemptId || joinFlowResolvedRef.current) return;
+
                     setDataConnectionForVerification(dataConn);
                     dataConnectionForVerificationRef.current = dataConn;
 
@@ -294,23 +357,17 @@ export function LandingPage() {
                     };
 
                     setTimeout(() => {
-                        if (dataConn.open) {
+                        if (joinAttemptIdRef.current === attemptId && !joinFlowResolvedRef.current && dataConn.open) {
                             dataConn.send(joinRequestMessage);
                         }
                     }, TIMING.JOIN_REQUEST_DELAY);
 
                     let isPasswordRoom = false;
                     dataConn.on('data', (data: unknown) => {
+                        if (joinAttemptIdRef.current !== attemptId || joinFlowResolvedRef.current) return;
+
                         if (isSessionJoinRejectedMessage(data)) {
-                            setError(data.payload.reason);
-                            setIsConnecting(false);
-                            setIsAwaitingPasswordVerification(false);
-                            hostPeerIdForVerificationRef.current = null;
-                            setDataConnectionForVerification(null);
-                            dataConnectionForVerificationRef.current = null;
-                            const cleanedPeer = cleanupParticipantPeer(tempPeer);
-                            tempPeerForVerificationRef.current = cleanedPeer;
-                            dataConn.close();
+                            failCurrentJoin(data.payload.reason);
                             return;
                         }
 
@@ -327,27 +384,32 @@ export function LandingPage() {
 
                 dataConn.on('error', (err) => {
                     console.error('[LandingPage] Data connection error:', err);
-                    setError(ERROR_MESSAGES.CONNECTION_ERROR);
-                    setIsConnecting(false);
-                    const cleanedPeer = cleanupParticipantPeer(tempPeer);
-                    tempPeerForVerificationRef.current = cleanedPeer;
+                    failCurrentJoin(ERROR_MESSAGES.CONNECTION_ERROR);
+                });
+
+                dataConn.on('close', () => {
+                    failCurrentJoin(ERROR_MESSAGES.CONNECTION_LOST);
                 });
             });
 
             tempPeer.on('error', (err) => {
                 console.error('[LandingPage] Peer error during join:', err);
-                setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-                setIsConnecting(false);
-                const cleanedPeer = cleanupParticipantPeer(tempPeer);
-                tempPeerForVerificationRef.current = cleanedPeer;
+                failCurrentJoin(ERROR_MESSAGES.UNABLE_TO_CONNECT);
+            });
+
+            tempPeer.on('disconnected', () => {
+                failCurrentJoin(ERROR_MESSAGES.CONNECTION_LOST);
+            });
+
+            tempPeer.on('close', () => {
+                failCurrentJoin(ERROR_MESSAGES.CONNECTION_LOST);
             });
 
         } catch (err) {
             console.error('[LandingPage] Join flow error:', err);
-            setError(ERROR_MESSAGES.UNABLE_TO_CONNECT);
-            setIsConnecting(false);
+            failCurrentJoin(ERROR_MESSAGES.UNABLE_TO_CONNECT);
         }
-    }, [handlePasswordMessage, setConnectionStatus, setParticipantPeer, setRemoteStream]);
+    }, [clearJoinTimeout, failJoin, handlePasswordMessage, setConnectionStatus, setParticipantHostConnection, setParticipantPeer, setRemoteStream]);
 
     // Handle location state (errors and auto-join)
     const hasHandledAutoJoin = useRef(false);
@@ -381,9 +443,17 @@ export function LandingPage() {
         };
     }, [qrCameraStream]);
 
-    // Cleanup QR camera when leaving join menu
     useEffect(() => {
-        if (menuState !== 'join' && qrCameraStream) {
+        return () => {
+            clearJoinTimeout();
+            tempPeerForVerificationRef.current = cleanupParticipantPeer(tempPeerForVerificationRef.current);
+        };
+    }, [clearJoinTimeout]);
+
+    // Cleanup QR camera when leaving QR scanning mode
+    useEffect(() => {
+        if ((menuState !== 'join' || joinMode !== 'qr') && qrCameraStream) {
+            qrCameraRequestIdRef.current += 1;
             // Note: stopScanning is automatically called by useQRScanner when enabled becomes false
             qrCameraStream.getTracks().forEach(track => track.stop());
             setQrCameraStream(null);
@@ -391,22 +461,44 @@ export function LandingPage() {
                 qrVideoRef.current.srcObject = null;
             }
         }
-    }, [menuState, qrCameraStream]);
+    }, [menuState, joinMode, qrCameraStream]);
 
     const handleCapture = async (source: MediaSourceType) => {
+        if (isStartingCaptureRef.current) return;
+
+        const trimmedPassword = hostPassword.trim();
+        if (trimmedPassword && trimmedPassword.length < PASSWORD_CONFIG.MIN_LENGTH) {
+            setPasswordInputError(ERROR_MESSAGES.PASSWORD_TOO_SHORT);
+            setError(null);
+            setMenuState('settings');
+            return;
+        }
+
+        if (trimmedPassword.length > PASSWORD_CONFIG.MAX_LENGTH) {
+            setPasswordInputError(ERROR_MESSAGES.PASSWORD_TOO_LONG);
+            setError(null);
+            setMenuState('settings');
+            return;
+        }
+
         try {
+            isStartingCaptureRef.current = true;
+            setIsStartingCapture(true);
             setError(null);
 
             // Save session secret to context (empty string = public room)
-            const trimmedPassword = hostPassword.trim();
             const sessionSecret = trimmedPassword ? trimmedPassword : null;
             setSessionSecret(sessionSecret);
 
             await startCapture(source);
+            isStartingCaptureRef.current = false;
+            setIsStartingCapture(false);
 
             // Navigate immediately - stream is already in context
             navigate('/host', { state: { fromLanding: true, hasStream: true } });
         } catch (err) {
+            isStartingCaptureRef.current = false;
+            setIsStartingCapture(false);
             console.error('[LandingPage] Capture failed:', err);
             if (err instanceof Error) {
                 // If permission denied or cancelled, show error here
@@ -454,12 +546,16 @@ export function LandingPage() {
 
         // Handle back from join menu with password verification in progress
         if (menuState === 'join' && isAwaitingPasswordVerification) {
+            joinFlowResolvedRef.current = true;
+            clearJoinTimeout();
             const cleanedPeer = cleanupParticipantPeer(tempPeerForVerificationRef.current);
             tempPeerForVerificationRef.current = cleanedPeer;
             setIsAwaitingPasswordVerification(false);
             hostPeerIdForVerificationRef.current = null;
             setDataConnectionForVerification(null);
             dataConnectionForVerificationRef.current = null;
+            setParticipantHostConnection(null);
+            setParticipantPeer(null);
             setParticipantPassword('');
             setError(null);
             setMenuState('root');
@@ -483,6 +579,9 @@ export function LandingPage() {
     };
 
     const startQRCamera = async () => {
+        const requestId = qrCameraRequestIdRef.current + 1;
+        qrCameraRequestIdRef.current = requestId;
+
         try {
             const isMobile = window.innerWidth <= VALIDATION.DESKTOP_BREAKPOINT;
             const constraints: MediaStreamConstraints = {
@@ -492,18 +591,30 @@ export function LandingPage() {
             };
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            if (
+                qrCameraRequestIdRef.current !== requestId ||
+                menuStateRef.current !== 'join' ||
+                joinModeRef.current !== 'qr'
+            ) {
+                stream.getTracks().forEach(track => track.stop());
+                return;
+            }
+
             setQrCameraStream(stream);
 
             if (qrVideoRef.current) {
                 qrVideoRef.current.srcObject = stream;
             }
         } catch (err) {
+            if (qrCameraRequestIdRef.current !== requestId || menuStateRef.current !== 'join' || joinModeRef.current !== 'qr') return;
             console.error('Failed to start QR camera:', err);
             setError(ERROR_MESSAGES.FAILED_TO_ACCESS_CAMERA);
         }
     };
 
     const stopQRCamera = useCallback(() => {
+        qrCameraRequestIdRef.current += 1;
         const currentStream = qrCameraStreamRef.current;
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
@@ -531,9 +642,9 @@ export function LandingPage() {
     const handleQRScanError = useCallback((errorMessage: string) => {
         setError(errorMessage);
         setTimeout(() => {
-            if (joinMode === 'qr') setError(null);
+            if (joinModeRef.current === 'qr') setError(null);
         }, TIMING.ERROR_DISPLAY_DURATION);
-    }, [joinMode]);
+    }, []);
 
     const handleQRCodeScanned = useCallback(async (result: QRScanResult) => {
         if (!result.peerId) {
@@ -546,6 +657,7 @@ export function LandingPage() {
             setSessionId(result.peerId);
 
             // 2. Stop camera
+            qrCameraRequestIdRef.current += 1;
             const currentStream = qrCameraStreamRef.current;
             if (currentStream) {
                 currentStream.getTracks().forEach(track => track.stop());
@@ -619,7 +731,7 @@ export function LandingPage() {
             return;
         }
         setError(null);
-        submitPassword(participantPassword);
+        submitPassword(participantPassword.trim());
     };
 
     return (
@@ -668,11 +780,11 @@ export function LandingPage() {
 
                         {menuState === 'share' && (
                             <>
-                                <button className="menu-button" onClick={handleCameraShare} key="share-camera">
+                                <button className="menu-button" onClick={handleCameraShare} disabled={isStartingCapture} key="share-camera">
                                     <IconCamera className="button-icon" />
                                     {LANDING_MENU.SHARE_CAMERA}
                                 </button>
-                                <button className="menu-button" onClick={handleScreenShare} key="share-screen">
+                                <button className="menu-button" onClick={handleScreenShare} disabled={isStartingCapture} key="share-screen">
                                     <IconScreen className="button-icon" />
                                     {LANDING_MENU.SHARE_SCREEN}
                                 </button>
