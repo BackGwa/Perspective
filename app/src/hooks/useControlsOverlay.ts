@@ -92,7 +92,7 @@ export function useControlsOverlay(overlayRef: RefObject<HTMLElement | null>) {
     if (!clickedInsideOverlay) {
       showOverlay();
     }
-  }, [hideOverlay, isCompactLayout, isOverlayVisible, overlayRef, showOverlay]);
+  }, [hideOverlay, isCompactLayout, isOverlayVisible, overlayRef, showOverlay, startHideTimeout]);
 
   return {
     isOverlayVisible,
