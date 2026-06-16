@@ -7,7 +7,7 @@ flowchart LR
     StreamCtx[StreamContext stream peer session state]
     ChatCtx[ChatContext messages unread timestamp]
     MediaSvc[mediaService getUserMedia getDisplayMedia]
-    PeerSvc[peerService PeerJS wrapper]
+    PeerSvc[peerService PeerJS wrapper + approved chat peers]
     Crypto[passwordCrypto HMAC + AES-GCM]
     PeerJSServer[PeerJS Server signaling only]
     Host[Host Browser]
@@ -45,11 +45,14 @@ sequenceDiagram
 
     PL->>TP: create peer + connect(hostPeerId)
     TP->>P: SESSION_JOIN_REQUEST(origin)
-    P->>P: domain check -> max participants -> password flow
+    P->>P: domain check -> capacity check -> password flow
     alt approved
         P-->>TP: PASSWORD_APPROVED
         PL->>S: setParticipantPeer + setParticipantHostConnection
         PL->>PP: navigate /share?peer=hostPeerId
+        PP->>PP: register call + chat listeners
+        PP->>P: SESSION_PARTICIPANT_READY
+        P->>P: enable chat for approved participant
         P->>TP: callPeer(stream)
         TP-->>PP: remote stream received
     else rejected
@@ -74,7 +77,8 @@ flowchart TD
     K -->|no| L{retry remaining}
     L -->|yes| M[PASSWORD_REJECTED remainingRetries]
     L -->|no| N[PASSWORD_REJECTED 0 + close]
-    H --> O[Host starts media call to participant]
+    H --> O[Wait for SESSION_PARTICIPANT_READY]
+    O --> P[Enable chat + start media call]
 ```
 
 ## 4) Chat Flow (DataChannel Relay)
@@ -92,19 +96,21 @@ sequenceDiagram
         Hook->>Hook: encrypt AES-GCM (text, iv)
     end
     alt sender is host
-        Hook->>PS: broadcast CHAT_MESSAGE
+        Hook->>PS: send CHAT_MESSAGE to approved chat peers
     else sender is participant
         Hook->>PS: send CHAT_MESSAGE to host
     end
     Hook->>Ctx: add local message
 
     PS-->>Hook: incoming CHAT_MESSAGE
+    Hook->>Hook: validate length timestamp encryption iv ciphertext
     alt encrypted and decryptable
         Hook->>Hook: decrypt AES-GCM
     end
     Hook->>Hook: drop if timestamp < connectionTimestamp
     alt receiver is host
-        Hook->>PS: relay to all participants except sender
+        Hook->>Hook: normalize senderId/senderRole from DataConnection peer
+        Hook->>PS: relay to approved chat peers except sender
     end
     Hook->>Ctx: add message + unread management
 ```
@@ -112,17 +118,19 @@ sequenceDiagram
 ## 5) Media Lifecycle
 ```mermaid
 flowchart TD
-    A[Host chooses source] --> B{camera or screen}
+    A[Host chooses source] --> A1[serialize capture requests]
+    A1 --> B
     B -->|camera| C[getUserMedia + contentHint motion]
     B -->|screen| D[getDisplayMedia + contentHint detail]
     D --> E[optional mic track add]
-    C --> F[setStream in StreamContext]
+    C --> F[stop previous stream + setStream in StreamContext]
     E --> F
     F --> G[Host calls participants]
     G --> H{controls}
-    H --> I[toggle video]
-    H --> J[toggle audio]
-    H --> K[switch camera only in camera mode]
+    H --> I[toggle video track.enabled]
+    H --> J[toggle microphone track.enabled]
+    H --> K[switch camera only in camera mode with in-flight guard]
+    K --> K1[replace video track on active calls]
     H --> L[stop sharing]
     L --> M[stop all tracks + clear stream + destroy peer]
 ```
