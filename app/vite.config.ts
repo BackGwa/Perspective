@@ -4,7 +4,7 @@ import path from 'path'
 import { execSync } from 'child_process'
 import fs from 'fs'
 
-const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, './package.json'), 'utf-8'))
+const packageJson = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, './package.json'), 'utf-8'))
 const version = packageJson.version || '0.0.0'
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim()
 
@@ -12,9 +12,9 @@ const commitHash = execSync('git rev-parse --short HEAD').toString().trim()
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@assets': path.resolve(__dirname, './assets'),
-      '@styles': path.resolve(__dirname, './styles')
+      '@': path.resolve(import.meta.dirname, './src'),
+      '@assets': path.resolve(import.meta.dirname, './assets'),
+      '@styles': path.resolve(import.meta.dirname, './styles')
     }
   },
   plugins: [react()],
@@ -30,14 +30,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild',
+    minify: 'oxc',
     rollupOptions: {
       output: {
-        manualChunks: undefined
+        manualChunks: undefined,
+        minify: {
+          compress: {
+            dropConsole: true,
+            dropDebugger: true
+          }
+        }
       }
     }
-  },
-  esbuild: {
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
   }
 })

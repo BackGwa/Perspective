@@ -15,12 +15,10 @@
     "jsx": "react-jsx",
 
     /* Path aliases */
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
-      "@/*": ["src/*"],
-      "@assets/*": ["assets/*"],
-      "@styles/*": ["styles/*"]
+      "@/*": ["./src/*"],
+      "@assets/*": ["./assets/*"],
+      "@styles/*": ["./styles/*"]
     },
 
     /* Linting */
