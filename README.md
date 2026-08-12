@@ -67,7 +67,8 @@ VITE_MAX_RESOLUTION_HEIGHT=1080
 VITE_MAX_FRAMERATE=30
 
 # SEO Settings
-VITE_APP_DOMAIN=https://yourdomain.com/
+# No trailing slash - asset paths are appended directly.
+VITE_APP_DOMAIN=https://yourdomain.com
 ```
 
 > **Note**
