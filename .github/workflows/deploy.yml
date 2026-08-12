@@ -39,7 +39,7 @@ jobs:
       - name: Build project
         working-directory: ./app
         env:
-          VITE_APP_DOMAIN: https://backgwa.github.io/Perspective/
+          VITE_APP_DOMAIN: https://backgwa.github.io/Perspective
           VITE_PEERJS_SECURE: true
           VITE_MAX_PARTICIPANTS: 128
           VITE_MAX_PASSWORD_RETRIES: 3

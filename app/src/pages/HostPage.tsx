@@ -5,6 +5,7 @@ import { HostControls } from '../components/host/HostControls';
 import { useMediaStream } from '../hooks/useMediaStream';
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { useControlsOverlay } from '../hooks/useControlsOverlay';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { useChatMessaging } from '../hooks/useChatMessaging';
 import { ChatProvider, useChatContext } from '../contexts/ChatContext';
 import { useStreamContext } from '../contexts/StreamContext';
@@ -22,8 +23,8 @@ function HostPageInner() {
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const disconnectRef = useRef<(() => void) | undefined>(undefined);
-  const { peerId, connectionStatus, sessionSecret } = useStreamContext();
-  const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
+  const { peerId, sessionSecret } = useStreamContext();
+  const { unreadCount, setChatOpen } = useChatContext();
 
   const handleStreamEnded = useCallback(() => {
     if (hasNavigatedRef.current) return;
@@ -89,6 +90,8 @@ function HostPageInner() {
     switchCamera
   } = useMediaStream({ onStreamEnded: handleStreamEnded });
 
+  useWakeLock(!!stream);
+
   const stopCaptureRef = useRef(stopCapture);
 
   useEffect(() => {
@@ -98,8 +101,7 @@ function HostPageInner() {
   const { sendMessage, handleIncomingMessage } = useChatMessaging({
     role: 'host',
     peerId,
-    sessionSecret,
-    connectionTimestamp: connectionTimestamp || 0
+    sessionSecret
   });
 
   const { disconnect, getShareLink, participantCount } = usePeerConnection({
@@ -108,12 +110,6 @@ function HostPageInner() {
     sourceType,
     onChatMessage: handleIncomingMessage
   });
-
-  useEffect(() => {
-    if (connectionStatus === 'waiting_for_peer' && !connectionTimestamp) {
-      setConnectionTimestamp(Date.now());
-    }
-  }, [connectionStatus, connectionTimestamp, setConnectionTimestamp]);
 
   useEffect(() => {
     disconnectRef.current = disconnect;

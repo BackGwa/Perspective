@@ -71,8 +71,7 @@ export function useMediaStream(options: UseMediaStreamOptions = { cleanupOnUnmou
   useEffect(() => {
     const checkCameraSwitch = async () => {
       if (streamState.sourceType === 'camera') {
-        const hasMultipleCameras = await mediaService.hasFrontAndBackCamera();
-        setCanSwitchCamera(hasMultipleCameras);
+        setCanSwitchCamera(await mediaService.hasMultipleCameras());
       } else {
         setCanSwitchCamera(false);
       }

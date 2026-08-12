@@ -169,6 +169,9 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
           dataConn.on('close', handleDataConnectionClosed);
           dataConn.on('error', handleDataConnectionClosed);
         },
+        onReconnect: () => {
+          updateHostParticipantStatus();
+        },
         onDisconnect: () => {
           setConnectionStatus('disconnected');
         },
@@ -185,7 +188,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
       setConnectionStatus('failed');
       hasInitialized.current = false;
     }
-  }, [role, setPeerId, setConnectionStatus, setupPasswordListener, clearParticipantState]);
+  }, [role, setPeerId, setConnectionStatus, setupPasswordListener, clearParticipantState, updateHostParticipantStatus]);
 
   const initializeParticipant = useCallback(async () => {
     if (hasInitialized.current || !hostPeerId) return;

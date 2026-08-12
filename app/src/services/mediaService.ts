@@ -46,22 +46,9 @@ class MediaService {
     }
   }
 
-  async hasFrontAndBackCamera(): Promise<boolean> {
+  async hasMultipleCameras(): Promise<boolean> {
     const cameras = await this.getAvailableCameras();
-    if (cameras.length < 2) return false;
-
-    const hasBack = cameras.some(cam =>
-      cam.label.toLowerCase().includes('back') ||
-      cam.label.toLowerCase().includes('rear') ||
-      cam.label.toLowerCase().includes('environment')
-    );
-    const hasFront = cameras.some(cam =>
-      cam.label.toLowerCase().includes('front') ||
-      cam.label.toLowerCase().includes('user') ||
-      cam.label.toLowerCase().includes('facetime')
-    );
-
-    return (hasBack && hasFront) || cameras.length >= 2;
+    return cameras.length >= 2;
   }
 
   async getCameraStream(facingMode?: CameraFacingMode): Promise<MediaStream> {

@@ -1,20 +1,6 @@
 import { PASSWORD_CONFIG } from '../config/constants';
 
 class PasswordService {
-  verifyPassword(input: string, stored: string): boolean {
-    // Trim whitespace for comparison
-    const trimmedInput = input.trim();
-    const trimmedStored = stored.trim();
-
-    // Empty password means public room - always allow
-    if (!trimmedStored) {
-      return true;
-    }
-
-    // Case-sensitive comparison
-    return trimmedInput === trimmedStored;
-  }
-
   shouldRejectParticipant(retryCount: number): boolean {
     return retryCount >= PASSWORD_CONFIG.MAX_RETRIES;
   }

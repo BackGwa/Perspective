@@ -5,9 +5,6 @@ interface ChatContextType {
   messages: ChatMessage[];
   addMessage: (message: ChatMessage) => void;
   unreadCount: number;
-  markAllAsRead: () => void;
-  connectionTimestamp: number | null;
-  setConnectionTimestamp: (timestamp: number) => void;
   setChatOpen: (isOpen: boolean) => void;
 }
 
@@ -16,7 +13,6 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [connectionTimestamp, setConnectionTimestamp] = useState<number | null>(null);
   const isChatOpenRef = useRef(false);
 
   const addMessage = useCallback((message: ChatMessage) => {
@@ -24,10 +20,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (!isChatOpenRef.current) {
       setUnreadCount(prev => prev + 1);
     }
-  }, []);
-
-  const markAllAsRead = useCallback(() => {
-    setUnreadCount(0);
   }, []);
 
   const setChatOpen = useCallback((isOpen: boolean) => {
@@ -43,9 +35,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         messages,
         addMessage,
         unreadCount,
-        markAllAsRead,
-        connectionTimestamp,
-        setConnectionTimestamp,
         setChatOpen
       }}
     >
