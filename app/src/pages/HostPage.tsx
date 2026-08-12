@@ -5,6 +5,7 @@ import { HostControls } from '../components/host/HostControls';
 import { useMediaStream } from '../hooks/useMediaStream';
 import { usePeerConnection } from '../hooks/usePeerConnection';
 import { useControlsOverlay } from '../hooks/useControlsOverlay';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { useChatMessaging } from '../hooks/useChatMessaging';
 import { ChatProvider, useChatContext } from '../contexts/ChatContext';
 import { useStreamContext } from '../contexts/StreamContext';
@@ -88,6 +89,8 @@ function HostPageInner() {
     toggleAudio,
     switchCamera
   } = useMediaStream({ onStreamEnded: handleStreamEnded });
+
+  useWakeLock(!!stream);
 
   const stopCaptureRef = useRef(stopCapture);
 
