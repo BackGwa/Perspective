@@ -1,4 +1,4 @@
-@import '../variables.scss';
+@use '../variables.scss' as *;
 
 .controls-overlay {
   --controls-row-size: var(--control-size-md);
