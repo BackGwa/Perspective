@@ -32,7 +32,9 @@ export function generateNonce(byteLength: number = 16): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function deriveKey(password: string): Promise<CryptoKey> {
+// The salt binds the derived key to a single session, so the same password
+// cannot produce the same key twice and no table can be precomputed for the app.
+async function deriveKey(password: string, sessionId: string): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
     encoder.encode(password),
@@ -44,7 +46,7 @@ async function deriveKey(password: string): Promise<CryptoKey> {
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: encoder.encode('perspective-chat-salt'),
+      salt: encoder.encode(`perspective-chat|${sessionId}`),
       iterations: 100000,
       hash: 'SHA-256'
     },
@@ -57,9 +59,10 @@ async function deriveKey(password: string): Promise<CryptoKey> {
 
 export async function encryptMessage(
   plaintext: string,
-  password: string
+  password: string,
+  sessionId: string
 ): Promise<{ ciphertext: string; iv: string }> {
-  const key = await deriveKey(password);
+  const key = await deriveKey(password, sessionId);
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
   const ciphertext = await crypto.subtle.encrypt(
@@ -77,9 +80,10 @@ export async function encryptMessage(
 export async function decryptMessage(
   ciphertext: string,
   iv: string,
-  password: string
+  password: string,
+  sessionId: string
 ): Promise<string> {
-  const key = await deriveKey(password);
+  const key = await deriveKey(password, sessionId);
 
   const ivBuffer = hexToBuffer(iv);
   const ciphertextBuffer = hexToBuffer(ciphertext);

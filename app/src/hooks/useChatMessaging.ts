@@ -51,6 +51,10 @@ export function useChatMessaging({
 }: UseChatMessagingOptions) {
   const { addMessage } = useChatContext();
 
+  // Both sides derive the chat key from the host peer id, which the host owns
+  // and the participant receives through the share link.
+  const sessionId = role === 'host' ? peerId : (hostPeerId ?? null);
+
   const sendMessage = useCallback(async (text: string) => {
     if (!peerId || !text.trim()) return;
 
@@ -66,8 +70,13 @@ export function useChatMessaging({
     let iv: string | undefined;
 
     if (isEncrypted && sessionSecret) {
+      if (!sessionId) {
+        console.error('[Chat] Cannot encrypt message - missing session id');
+        return;
+      }
+
       try {
-        const encrypted = await encryptMessage(trimmed, sessionSecret);
+        const encrypted = await encryptMessage(trimmed, sessionSecret, sessionId);
         messageText = encrypted.ciphertext;
         iv = encrypted.iv;
       } catch (error) {
@@ -107,7 +116,7 @@ export function useChatMessaging({
       senderId: message.payload.senderId,
       encrypted: isEncrypted
     });
-  }, [peerId, role, hostPeerId, sessionSecret, addMessage]);
+  }, [peerId, role, hostPeerId, sessionSecret, sessionId, addMessage]);
 
   const handleIncomingMessage = useCallback(async (data: unknown) => {
     if (!isChatDataMessage(data)) {
@@ -128,8 +137,13 @@ export function useChatMessaging({
     let displayText = payload.text;
 
     if (payload.encrypted && sessionSecret && payload.iv) {
+      if (!sessionId) {
+        console.error('[Chat] Cannot decrypt message - missing session id');
+        return;
+      }
+
       try {
-        displayText = await decryptMessage(payload.text, payload.iv, sessionSecret);
+        displayText = await decryptMessage(payload.text, payload.iv, sessionSecret, sessionId);
       } catch (error) {
         console.error('Failed to decrypt message:', error);
         return;
@@ -157,7 +171,7 @@ export function useChatMessaging({
       senderId: payload.senderId,
       encrypted: payload.encrypted
     });
-  }, [role, sessionSecret, connectionTimestamp, addMessage]);
+  }, [role, sessionSecret, sessionId, connectionTimestamp, addMessage]);
 
   return {
     sendMessage,
