@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import type { DataConnection } from 'peerjs';
 import { peerService } from '../services/peerService';
 import { passwordService } from '../services/passwordService';
@@ -30,8 +30,20 @@ export function usePasswordProtection({
   const approvedParticipants = useRef<Set<string>>(new Set());
   const participantNonces = useRef<Map<string, string>>(new Map());
 
+  // The listener is registered once per connection and outlives the render that
+  // created it, so the admission rules are read through refs to stay current.
+  const sessionSecretRef = useRef(sessionSecret);
+  const domainPolicyRef = useRef(domainPolicy);
+
+  useEffect(() => {
+    sessionSecretRef.current = sessionSecret;
+  }, [sessionSecret]);
+
+  useEffect(() => {
+    domainPolicyRef.current = domainPolicy;
+  }, [domainPolicy]);
+
   const setupPasswordListener = useCallback((peerId: string, dataConnection: DataConnection) => {
-    const isPasswordProtected = passwordService.isPasswordProtected(sessionSecret);
     const hostOrigin = window.location.origin;
     let hasJoinRequest = false;
     let isResolved = false;
@@ -86,7 +98,7 @@ export function usePasswordProtection({
         return;
       }
 
-      if (!isPasswordProtected) {
+      if (!passwordService.isPasswordProtected(sessionSecretRef.current)) {
         const approvalMessage: PasswordMessage = {
           type: 'PASSWORD_APPROVED',
           payload: {}
@@ -112,7 +124,7 @@ export function usePasswordProtection({
       if (hasJoinRequest || isResolved) return;
       hasJoinRequest = true;
 
-      if (domainPolicy === 'same-domain' && origin !== hostOrigin) {
+      if (domainPolicyRef.current === 'same-domain' && origin !== hostOrigin) {
         rejectForDomain();
         return;
       }
@@ -130,11 +142,12 @@ export function usePasswordProtection({
 
       if (data.payload?.proof) {
         const nonce = participantNonces.current.get(peerId);
-        if (!nonce || !sessionSecret) {
+        const secret = sessionSecretRef.current;
+        if (!nonce || !secret) {
           console.warn('[PasswordProtection] Missing nonce or session secret for proof verification');
         } else {
           try {
-            const expectedProof = await hmacSha256(sessionSecret, nonce);
+            const expectedProof = await hmacSha256(secret, nonce);
             isValid = expectedProof === data.payload.proof;
           } catch (error) {
             console.error('[PasswordProtection] Failed to verify HMAC proof:', error);
@@ -222,7 +235,7 @@ export function usePasswordProtection({
         markRejected();
       }
     });
-  }, [sessionSecret, domainPolicy, getCurrentParticipantCount, onParticipantApproved, onParticipantReady, onParticipantRejected]);
+  }, [getCurrentParticipantCount, onParticipantApproved, onParticipantReady, onParticipantRejected]);
 
   return {
     setupPasswordListener
