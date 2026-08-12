@@ -22,8 +22,8 @@ function HostPageInner() {
   const hasNavigatedRef = useRef(false);
   const controlsOverlayRef = useRef<HTMLDivElement>(null);
   const disconnectRef = useRef<(() => void) | undefined>(undefined);
-  const { peerId, connectionStatus, sessionSecret } = useStreamContext();
-  const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
+  const { peerId, sessionSecret } = useStreamContext();
+  const { unreadCount, setChatOpen } = useChatContext();
 
   const handleStreamEnded = useCallback(() => {
     if (hasNavigatedRef.current) return;
@@ -98,8 +98,7 @@ function HostPageInner() {
   const { sendMessage, handleIncomingMessage } = useChatMessaging({
     role: 'host',
     peerId,
-    sessionSecret,
-    connectionTimestamp: connectionTimestamp || 0
+    sessionSecret
   });
 
   const { disconnect, getShareLink, participantCount } = usePeerConnection({
@@ -108,12 +107,6 @@ function HostPageInner() {
     sourceType,
     onChatMessage: handleIncomingMessage
   });
-
-  useEffect(() => {
-    if (connectionStatus === 'waiting_for_peer' && !connectionTimestamp) {
-      setConnectionTimestamp(Date.now());
-    }
-  }, [connectionStatus, connectionTimestamp, setConnectionTimestamp]);
 
   useEffect(() => {
     disconnectRef.current = disconnect;

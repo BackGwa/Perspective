@@ -26,7 +26,7 @@ function ParticipantPageInner() {
   const { isOverlayVisible, showOverlay, hideOverlay } = useControlsOverlay(controlsOverlayRef);
 
   const { peerId, connectionStatus, setConnectionStatus, remoteStream, setRemoteStream, participantPeer, setParticipantPeer, participantHostConnection, setParticipantHostConnection, sessionSecret } = useStreamContext();
-  const { unreadCount, setConnectionTimestamp, connectionTimestamp, setChatOpen } = useChatContext();
+  const { unreadCount, setChatOpen } = useChatContext();
 
   useEffect(() => {
     if (!hostPeerId) {
@@ -50,8 +50,7 @@ function ParticipantPageInner() {
     role: 'participant',
     peerId,
     hostPeerId,
-    sessionSecret,
-    connectionTimestamp: connectionTimestamp || 0
+    sessionSecret
   });
 
   const { getShareLink } = usePeerConnection({
@@ -71,12 +70,6 @@ function ParticipantPageInner() {
     participantHostConnection.send(readyMessage);
     hasSentReadyRef.current = true;
   }, [participantPeer, participantHostConnection]);
-
-  useEffect(() => {
-    if (connectionStatus === 'connected' && !connectionTimestamp) {
-      setConnectionTimestamp(Date.now());
-    }
-  }, [connectionStatus, connectionTimestamp, setConnectionTimestamp]);
 
   useEffect(() => {
     if (!participantPeer) return;

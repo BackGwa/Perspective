@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo, useCallback, type RefObject } from 'react';
+import { useRef, useState, useEffect, useCallback, type RefObject } from 'react';
 import {
     IconSpeakerOn,
     IconSpeakerOff,
@@ -51,12 +51,7 @@ export function ParticipantControls({
     const containerRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [inputValue, setInputValue] = useState('');
-    const { messages, connectionTimestamp } = useChatContext();
-
-    const visibleMessages = useMemo(() => {
-        if (!connectionTimestamp) return [];
-        return messages.filter(msg => msg.timestamp >= connectionTimestamp);
-    }, [messages, connectionTimestamp]);
+    const { messages } = useChatContext();
 
     useEffect(() => {
         if (isChatVisible) {
@@ -92,7 +87,7 @@ export function ParticipantControls({
                 <div className="controls-overlay__chat-panel">
                     <div ref={messagesContainerRef} className="controls-overlay__chat-messages">
                         <div className="controls-overlay__chat-messages-inner">
-                            {visibleMessages.map(message => (
+                            {messages.map(message => (
                                 <div
                                     key={message.id}
                                     className={`controls-overlay__chat-message ${message.role === 'host' ? 'controls-overlay__chat-message--right' : 'controls-overlay__chat-message--left'}`}

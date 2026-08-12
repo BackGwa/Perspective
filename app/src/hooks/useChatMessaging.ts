@@ -16,7 +16,6 @@ interface UseChatMessagingOptions {
   peerId: string | null;
   hostPeerId?: string | null;  // Required for participant
   sessionSecret: string | null;
-  connectionTimestamp: number;
 }
 
 const isValidHex = (value: string, maxLength: number) => {
@@ -46,8 +45,7 @@ export function useChatMessaging({
   role,
   peerId,
   hostPeerId,
-  sessionSecret,
-  connectionTimestamp
+  sessionSecret
 }: UseChatMessagingOptions) {
   const { addMessage } = useChatContext();
 
@@ -130,10 +128,6 @@ export function useChatMessaging({
       return;
     }
 
-    if (payload.timestamp < connectionTimestamp) {
-      return;
-    }
-
     let displayText = payload.text;
 
     if (payload.encrypted && sessionSecret && payload.iv) {
@@ -171,7 +165,7 @@ export function useChatMessaging({
       senderId: payload.senderId,
       encrypted: payload.encrypted
     });
-  }, [role, sessionSecret, sessionId, connectionTimestamp, addMessage]);
+  }, [role, sessionSecret, sessionId, addMessage]);
 
   return {
     sendMessage,
