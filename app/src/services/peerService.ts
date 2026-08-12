@@ -1,12 +1,13 @@
 import type Peer from 'peerjs';
 import type { MediaConnection, DataConnection } from 'peerjs';
-import { PEER_CONFIG, PEER_SERVER_CONFIG, ERROR_MESSAGES } from '../config/constants';
+import { PEER_CONFIG, PEER_SERVER_CONFIG, ERROR_MESSAGES, SIGNALING_RECONNECT } from '../config/constants';
 import type { PeerRole } from '../types/peer.types';
 
 type PeerEventCallback = {
   onOpen?: (peerId: string) => void;
   onCall?: (call: MediaConnection) => void;
   onConnection?: (peerId: string, dataConnection: DataConnection) => void;
+  onReconnect?: () => void;
   onDisconnect?: () => void;
   onClose?: () => void;
   onError?: (error: Error) => void;
@@ -22,6 +23,8 @@ class PeerService {
   private dataConnections: Map<string, DataConnection> = new Map();
   private chatEnabledPeers: Set<string> = new Set();
   private peerModulePromise: Promise<typeof import('peerjs')> | null = null;
+  private reconnectAttempts = 0;
+  private reconnectTimer: number | null = null;
 
   private async loadPeerModule() {
     if (!this.peerModulePromise) {
@@ -35,6 +38,7 @@ class PeerService {
     if (this.peer) {
       this.peer.destroy();
     }
+    this.cancelReconnect();
 
     this.peer = new Peer({
       ...PEER_SERVER_CONFIG,
@@ -44,7 +48,14 @@ class PeerService {
       debug: PEER_CONFIG.debug
     });
 
+    let hasOpened = false;
     this.peer.on('open', (id: string) => {
+      this.cancelReconnect();
+      if (hasOpened) {
+        callbacks.onReconnect?.();
+        return;
+      }
+      hasOpened = true;
       callbacks.onOpen?.(id);
     });
 
@@ -55,10 +66,11 @@ class PeerService {
     });
 
     this.peer.on('disconnected', () => {
-      callbacks.onDisconnect?.();
+      this.attemptReconnect(callbacks);
     });
 
     this.peer.on('close', () => {
+      this.cancelReconnect();
       callbacks.onClose?.();
     });
 
@@ -81,6 +93,42 @@ class PeerService {
     }
 
     return this.peer;
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+
+  private cancelReconnect(): void {
+    this.clearReconnectTimer();
+    this.reconnectAttempts = 0;
+  }
+
+  // Peers that are already connected keep streaming without the signaling
+  // socket, so only report a disconnect once every retry is exhausted.
+  private attemptReconnect(callbacks: PeerEventCallback): void {
+    const peer = this.peer;
+    if (!peer || peer.destroyed) return;
+
+    if (this.reconnectAttempts >= SIGNALING_RECONNECT.MAX_ATTEMPTS) {
+      this.cancelReconnect();
+      callbacks.onDisconnect?.();
+      return;
+    }
+
+    const delay = SIGNALING_RECONNECT.BASE_DELAY * 2 ** this.reconnectAttempts;
+    this.reconnectAttempts += 1;
+
+    this.clearReconnectTimer();
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null;
+      const current = this.peer;
+      if (!current || current.destroyed || !current.disconnected) return;
+      current.reconnect();
+    }, delay);
   }
 
   callPeer(peerId: string, stream: MediaStream, options: CallPeerOptions = {}): MediaConnection {
@@ -145,6 +193,7 @@ class PeerService {
   }
 
   destroyPeer(): void {
+    this.cancelReconnect();
     this.closeAllCalls();
     this.dataConnections.clear();
     this.chatEnabledPeers.clear();

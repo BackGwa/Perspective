@@ -7,3 +7,10 @@ export const TIMING = {
   STREAM_WAIT_TIMEOUT: 3000,
   QR_SCAN_INTERVAL: 500,
 } as const;
+
+// Losing the signaling socket does not interrupt peers that are already
+// connected, so retry quietly instead of tearing the session down.
+export const SIGNALING_RECONNECT = {
+  MAX_ATTEMPTS: 5,
+  BASE_DELAY: 1000,
+} as const;
