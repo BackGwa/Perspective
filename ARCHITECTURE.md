@@ -109,6 +109,15 @@ flowchart TD
 Capacity counts pending, approved, queued and active participants together, so a
 join in progress cannot slip past the limit.
 
+Admission runs on a listener registered once per data connection, which outlives
+the render that created it, so `sessionSecret` and `domainPolicy` are read
+through refs and a mid-session change applies to the next join.
+
+These checks assume peers run the stock client. The origin behind the domain
+policy is self-reported in `SESSION_JOIN_REQUEST` and the retry budget is keyed
+by peer id, so a reload yields a fresh budget. Both hold only under that
+assumption; the password proof itself does not depend on it.
+
 ## 5. Chat
 
 ```mermaid
@@ -134,8 +143,7 @@ sequenceDiagram
     R->>CM: incoming CHAT_MESSAGE
     Note over CM: on the host, usePeerConnection first overwrites<br/>senderId and senderRole from the DataConnection peer
     CM->>CM: 1. validate shape, length, iv and hex
-    CM->>CM: 2. drop if older than connectionTimestamp
-    CM->>CM: 3. AES-GCM decrypt when encrypted
+    CM->>CM: 2. AES-GCM decrypt when encrypted
     alt receiver is host
         CM->>PS: relay the original payload to everyone except the sender
     end
@@ -143,6 +151,13 @@ sequenceDiagram
 ```
 
 Participants never talk to each other directly; the host is the only relay.
+
+`payload.timestamp` carries the sender's wall clock, so it is never compared
+against the receiver's clock — a peer whose clock lags would otherwise have
+every message silently discarded. A ChatContext is created per page mount and
+only ever holds messages from the current connection, so ordering follows
+arrival and no freshness filter is applied on either the receive or the render
+path.
 
 ## 6. Media Lifecycle
 
@@ -159,7 +174,7 @@ flowchart TD
     H --> I{"controls"}
     I --> I1["toggle video via track.enabled<br/>screen mode also gates system audio"]
     I --> I2["toggle mic via microphone track.enabled"]
-    I --> I3["switch camera — camera mode only, in-flight guard"]
+    I --> I3["switch camera — camera mode only, in-flight guard<br/>offered when 2 or more video inputs exist"]
     I3 --> I4["build new MediaStream, setStream,<br/>replaceTrack on active calls"]
     I --> I5["stop sharing"]
     I5 --> Z["stop all tracks, clearStream, destroyPeer, back to #/"]
@@ -168,6 +183,11 @@ flowchart TD
 
 Degradation preference follows the source: `maintain-resolution` for screen,
 `maintain-framerate` for camera.
+
+The switch itself flips `facingMode` between `user` and `environment`, which the
+browser resolves per device. Availability is decided by video input count alone,
+so a desktop with two webcams is offered the control even though the two facings
+are not meaningful there.
 
 ## 7. Connection Status
 
@@ -199,6 +219,15 @@ stateDiagram-v2
         to #/ with SESSION_ENDED
     end note
 ```
+
+Losing the signaling socket is not a session failure: peers that already hold a
+WebRTC connection keep streaming without it. `peerService` therefore retries
+`peer.reconnect()` up to `SIGNALING_RECONNECT.MAX_ATTEMPTS` times with
+exponential backoff from `BASE_DELAY`, leaving the status untouched while it
+retries. A successful retry re-emits `open`, which is routed to `onReconnect`
+rather than `onOpen` so the peer id is not reassigned; the host recomputes its
+status from the live participant count. Only once the retries are exhausted does
+`onDisconnect` fire and move the status to `disconnected`.
 
 ## 8. Participant State on the Host
 
