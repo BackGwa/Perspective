@@ -44,9 +44,18 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   const hasInitialized = useRef(false);
   const [participantCount, setParticipantCount] = useState(0);
 
+  // Data listeners are registered once per connection from callbacks captured at
+  // initialization, before the host peer id exists, so the handler is read through
+  // a ref to pick up the current session id.
+  const onChatMessageRef = useRef(onChatMessage);
+
   useEffect(() => {
     streamRef.current = stream || null;
   }, [stream]);
+
+  useEffect(() => {
+    onChatMessageRef.current = onChatMessage;
+  }, [onChatMessage]);
 
   const updateHostParticipantStatus = useCallback(() => {
     const count = participantsRef.current.size;
@@ -92,12 +101,12 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
   const enableParticipantChat = useCallback((participantId: string, dataConn: DataConnection) => {
     peerService.setChatEnabled(participantId, true);
 
-    if (!onChatMessage || chatListenerParticipantsRef.current.has(participantId)) return;
+    if (!onChatMessageRef.current || chatListenerParticipantsRef.current.has(participantId)) return;
 
     chatListenerParticipantsRef.current.add(participantId);
     dataConn.on('data', (data: unknown) => {
       if (isChatDataMessage(data)) {
-        onChatMessage({
+        onChatMessageRef.current?.({
           ...data,
           payload: {
             ...data.payload,
@@ -108,9 +117,9 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
         return;
       }
 
-      onChatMessage(data);
+      onChatMessageRef.current?.(data);
     });
-  }, [onChatMessage]);
+  }, []);
 
   const handleParticipantApproved = useCallback((participantId: string, dataConn: DataConnection) => {
     pendingPasswordApprovalRef.current.delete(participantId);
@@ -203,7 +212,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
         peerService.setDataConnection(hostPeerId, participantHostConnection);
 
         participantHostConnection.on('data', (data: unknown) => {
-          onChatMessage(data);
+          onChatMessageRef.current?.(data);
         });
 
         const handleHostConnectionClosed = () => {
@@ -258,7 +267,7 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
             .then((dataConn) => {
               if (onChatMessage) {
                 dataConn.on('data', (data: unknown) => {
-                  onChatMessage(data);
+                  onChatMessageRef.current?.(data);
                 });
               }
             })
