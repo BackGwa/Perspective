@@ -215,6 +215,12 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
       }
 
       existingPeer.on('call', (call: MediaConnection) => {
+        // Only the host streams to participants; calls from any other peer are refused.
+        if (call.peer !== hostPeerId) {
+          call.close();
+          return;
+        }
+
         call.on('stream', (remoteStream: MediaStream) => {
           setRemoteStream(remoteStream);
           setConnectionStatus('connected');
@@ -262,6 +268,11 @@ export function usePeerConnection({ role, stream, sourceType, hostPeerId, existi
             });
         },
         onCall: (call: MediaConnection) => {
+          if (call.peer !== hostPeerId) {
+            call.close();
+            return;
+          }
+
           call.on('stream', (remoteStream: MediaStream) => {
             setRemoteStream(remoteStream);
             setConnectionStatus('connected');
