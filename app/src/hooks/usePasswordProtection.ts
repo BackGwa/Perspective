@@ -47,6 +47,7 @@ export function usePasswordProtection({
     const hostOrigin = window.location.origin;
     let hasJoinRequest = false;
     let isResolved = false;
+    let isVerifyingProof = false;
 
     const markRejected = () => {
       if (isResolved) return;
@@ -135,7 +136,10 @@ export function usePasswordProtection({
     };
 
     const handlePasswordResponse = async (data: PasswordMessage) => {
-      if (isResolved) return;
+      // Responses arriving while a proof is being verified are dropped, otherwise
+      // a burst would all read the same retry count and bypass the limit.
+      if (isResolved || isVerifyingProof) return;
+      isVerifyingProof = true;
 
       const currentRetries = participantRetries.current.get(peerId) || 0;
       let isValid = false;
@@ -157,6 +161,7 @@ export function usePasswordProtection({
         console.warn('[PasswordProtection] Missing password proof');
       }
 
+      isVerifyingProof = false;
       if (isResolved) return;
 
       if (isValid) {
