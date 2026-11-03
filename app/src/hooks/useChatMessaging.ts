@@ -157,8 +157,9 @@ export function useChatMessaging({
       });
     }
 
+    // The remote id is sender-controlled, so a local one keeps React keys unique.
     addMessage({
-      id: payload.id,
+      id: crypto.randomUUID(),
       role: payload.senderRole === 'host' ? 'host' : 'peer',
       text: displayText,
       timestamp: payload.timestamp,
